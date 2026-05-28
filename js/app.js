@@ -16,6 +16,11 @@ let pedFiltro         = 'todos';
 let loteRowId         = 0;
 let listaParseada     = [];
 
+// ── Mutex flags para evitar duplicação de cliques ──────────────────
+let _salvandoProduto     = false;
+let _confirmarEntrada    = false;
+let _confirmarListaEntrada = false;
+
 // ══════════════════════════════════════════════════════════════════
 // LOADING OVERLAY
 // ══════════════════════════════════════════════════════════════════
@@ -155,21 +160,28 @@ function abrirModalProd(id) {
 function editarProd(id) { abrirModalProd(id); }
 
 async function salvarProduto() {
-  const id     = document.getElementById('mprod-id').value || undefined;
-  const nome   = sanitize(document.getElementById('mprod-nome').value);
-  const sabor  = sanitize(document.getElementById('mprod-sabor').value);
-  const compra = parseFloat(document.getElementById('mprod-compra').value) || 0;
-  const venda  = parseFloat(document.getElementById('mprod-venda').value)  || 0;
-
-  if (!nome || !sabor) { toast('Preencha nome e sabor', 're'); return; }
+  // ✓ PROTEÇÃO: Anti-duplicação de clique
+  if (_salvandoProduto) { toast('Salvando... aguarde', 're'); return; }
+  _salvandoProduto = true;
 
   try {
+    const id     = document.getElementById('mprod-id').value || undefined;
+    const nome   = sanitize(document.getElementById('mprod-nome').value);
+    const sabor  = sanitize(document.getElementById('mprod-sabor').value);
+    const compra = parseFloat(document.getElementById('mprod-compra').value) || 0;
+    const venda  = parseFloat(document.getElementById('mprod-venda').value)  || 0;
+
+    if (!nome || !sabor) { toast('Preencha nome e sabor', 're'); return; }
+
     const existe = !!id && !!state.prods[id];
     await ProdAPI.salvarProduto({ id, nome, sabor, compra, venda });
     fecharModal('modal-prod');
     toast(existe ? '✓ Produto atualizado' : '✓ Produto cadastrado');
     renderProds();
   } catch (e) { erroToast(e); }
+  finally {
+    _salvandoProduto = false; // ✓ Sempre libera o mutex
+  }
 }
 
 async function excluirProd(id) {
@@ -242,23 +254,27 @@ function selecionarLote(rowId, prodId) {
 function fechaLoteAC(id) { document.getElementById('lac-' + id)?.style && (document.getElementById('lac-' + id).style.display = 'none'); }
 
 async function confirmarEntrada() {
-  const rows = document.querySelectorAll('.lote-row');
-  if (!rows.length) { toast('Adicione pelo menos um item', 're'); return; }
-
-  const ops = [];
-  rows.forEach(row => {
-    const id     = row.id.replace('lr-', '');
-    const nomeEl = document.getElementById('lnome-' + id);
-    const qtd    = parseInt(document.getElementById('lqtd-' + id).value) || 0;
-    const prodId = nomeEl?.dataset.prodId;
-    if (!prodId || !state.prods[prodId] || qtd <= 0) return;
-    const p = state.prods[prodId];
-    ops.push({ prodId, nome: p.nome + ' ' + p.sabor, qtd, custo: p.compra });
-  });
-
-  if (!ops.length) { toast('Nenhum produto válido', 're'); return; }
+  // ✓ PROTEÇÃO: Anti-duplicação de clique
+  if (_confirmarEntrada) { toast('Processando... aguarde', 're'); return; }
+  _confirmarEntrada = true;
 
   try {
+    const rows = document.querySelectorAll('.lote-row');
+    if (!rows.length) { toast('Adicione pelo menos um item', 're'); return; }
+
+    const ops = [];
+    rows.forEach(row => {
+      const id     = row.id.replace('lr-', '');
+      const nomeEl = document.getElementById('lnome-' + id);
+      const qtd    = parseInt(document.getElementById('lqtd-' + id).value) || 0;
+      const prodId = nomeEl?.dataset.prodId;
+      if (!prodId || !state.prods[prodId] || qtd <= 0) return;
+      const p = state.prods[prodId];
+      ops.push({ prodId, nome: p.nome + ' ' + p.sabor, qtd, custo: p.compra });
+    });
+
+    if (!ops.length) { toast('Nenhum produto válido', 're'); return; }
+
     for (const op of ops) {
       await EntradasAPI.registrarEntrada(op);
       await MovsAPI.registrarMov({ tipo: 'entrada', desc: `+${op.qtd}x ${op.nome}`, val: `+${R(op.qtd * op.custo)}` });
@@ -269,6 +285,9 @@ async function confirmarEntrada() {
     toast(`✓ ${ops.length} produto(s) adicionado(s) ao estoque`);
     renderHistEntradas();
   } catch (e) { erroToast(e); }
+  finally {
+    _confirmarEntrada = false; // ✓ Sempre libera o mutex
+  }
 }
 
 function switchEntrada(btn, modo) {
@@ -331,10 +350,14 @@ function processarLista() {
 }
 
 async function confirmarEntradaLista() {
-  if (!listaParseada.length) return;
-  let adicionados = 0, criados = 0;
+  // ✓ PROTEÇÃO: Anti-duplicação de clique
+  if (_confirmarListaEntrada) { toast('Processando lista... aguarde', 're'); return; }
+  _confirmarListaEntrada = true;
 
   try {
+    if (!listaParseada.length) return;
+    let adicionados = 0, criados = 0;
+
     for (const [idx, item] of listaParseada.entries()) {
       const qtdEl = document.getElementById('lp-qty-' + idx);
       const qtd   = parseInt(qtdEl ? qtdEl.value : item.qtd) || 0;
@@ -364,6 +387,9 @@ async function confirmarEntradaLista() {
       ? `✓ ${adicionados} adicionados (${criados} novos cadastrados)`
       : `✓ ${adicionados} produto(s) adicionados ao estoque`);
   } catch (e) { erroToast(e); }
+  finally {
+    _confirmarListaEntrada = false; // ✓ Sempre libera o mutex
+  }
 }
 
 function renderHistEntradas() {
