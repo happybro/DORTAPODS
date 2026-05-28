@@ -411,7 +411,11 @@ function abrirTelaPedido() {
     ? `<span class="status-badge status-${pedAtual.status}">${pedAtual.status === 'pendente' ? '⏳ PENDENTE' : '✓ FINALIZADO'}</span>`
     : '';
 
-  renderProdutosParaPedido();
+  try {
+    renderProdutosParaPedido();
+  } catch(e) {
+    console.error('Erro ao renderizar produtos:', e);
+  }
   atualizarPedItens();
 }
 
