@@ -1,0 +1,199 @@
+┌─────────────────────────────────────────────────────────────────┐
+│                    CHECKLIST — IMPRIMA ISTO                     │
+│              (Ou leia no celular enquanto faz)                 │
+└─────────────────────────────────────────────────────────────────┘
+
+TOTAL DE PASSOS: 10 (leva ~15 minutos)
+
+════════════════════════════════════════════════════════════════════
+
+PARTE 1: CRIAR BANCO DE DADOS (5 minutos)
+
+⚪ Passo 1: Acessar Supabase
+   → Abra https://supabase.com
+   → Clique em "Sign Up"
+   → Crie conta (email ou GitHub)
+   → Confirme email
+
+⚪ Passo 2: Criar novo projeto
+   → Clique em "New Project"
+   → Preencha:
+     • Project Name: "podmanager"
+     • Database Password: qualquer senha (anote!)
+     • Region: São Paulo (ou outra)
+   → Clique "Create new project"
+   → AGUARDE 2-3 MINUTOS
+
+⚪ Passo 3: Executar o SQL
+   → Menu à esquerda → "SQL Editor"
+   → Clique "New Query"
+   → Abra arquivo: sql/schema.sql
+   → Copie TODO o conteúdo (Ctrl+A, Ctrl+C)
+   → Cole no Supabase (Ctrl+V)
+   → Clique botão "Run" (canto inferior direito)
+   → Espere alguns segundos
+   → Se aparecer ✓, funcionou!
+
+⚪ Passo 4: Copiar credenciais
+   → Menu à esquerda → "Settings"
+   → Clique em "API"
+   → Você verá:
+     • Project URL: ____________________________________________
+     • Anon public key: ________________________________________
+   → Copie essas 2 coisas (selecione, Ctrl+C)
+   → Cole num bloco de notas para ter à mão
+
+════════════════════════════════════════════════════════════════════
+
+PARTE 2: CONFIGURAR O CÓDIGO (1 minuto)
+
+⚪ Passo 5: Editar config.js
+   → Abra arquivo: js/config.js
+   → Você verá:
+     export const SUPABASE_URL      = 'https://SEU_PROJETO.supabase.co';
+     export const SUPABASE_ANON_KEY = 'SUA_ANON_KEY_AQUI';
+
+⚪ Passo 6: Colar as credenciais
+   → Substitua:
+     • 'https://SEU_PROJETO.supabase.co'
+       PELA sua Project URL do Supabase
+
+     • 'SUA_ANON_KEY_AQUI'
+       PELA sua Anon public key do Supabase
+
+   Exemplo (SUA versão vai ser diferente):
+     export const SUPABASE_URL      = 'https://abcdef123456.supabase.co';
+     export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+
+⚪ Passo 7: Salvar
+   → Salve o arquivo (Ctrl+S)
+   → ✓ Código está pronto!
+
+════════════════════════════════════════════════════════════════════
+
+PARTE 3: COLOCAR NA WEB (5 minutos)
+
+ESCOLHA UMA DAS DUAS OPÇÕES:
+
+──────────────────────────────────────────────────────────────────
+OPÇÃO A: VERCEL (recomendado)
+──────────────────────────────────────────────────────────────────
+
+⚪ Passo 8A.1: Criar conta no Vercel
+   → Abra https://vercel.com
+   → Clique "Sign Up"
+   → Use GitHub (mais rápido) ou email
+   → Confirme email
+
+⚪ Passo 8A.2: Upload do projeto
+   → Você está logado no Vercel
+   → Clique "Add New" (canto superior)
+   → Selecione "Project"
+   → Escolha "Deploy Manually"
+   → Arraste a pasta "dortapods" inteira
+     OU faça upload de:
+       - podmanager.html
+       - Pasta js/ (com todos os arquivos)
+       - Pasta sql/
+   → Clique "Deploy"
+   → ESPERE alguns segundos
+   → Você recebe um link: https://podmanager-xyz.vercel.app
+   → Anote esse link!
+
+──────────────────────────────────────────────────────────────────
+OPÇÃO B: NETLIFY (também fácil)
+──────────────────────────────────────────────────────────────────
+
+⚪ Passo 8B.1: Criar conta no Netlify
+   → Abra https://netlify.com
+   → Clique "Sign up"
+   → Use email ou GitHub
+   → Confirme email
+
+⚪ Passo 8B.2: Upload do projeto
+   → Você está logado no Netlify
+   → Você verá um área: "Drag and drop your site folder"
+   → Arraste a pasta "dortapods" inteira
+   → ESPERE alguns segundos
+   → Você recebe um link: https://podmanager-xyz.netlify.app
+   → Anote esse link!
+
+════════════════════════════════════════════════════════════════════
+
+PARTE 4: TESTAR NO CELULAR (1 minuto)
+
+⚪ Passo 9: Abrir no celular
+   → Pegue o link que recebeu (Vercel ou Netlify)
+   → Compartilhe com seu celular:
+     • WhatsApp (mande pra você mesmo)
+     • Email (mande pra você mesmo)
+     • Qualquer outro jeito
+   → Abra no navegador do celular
+   → Verá o PodManager funcionando!
+
+⚪ Passo 10: (Opcional) Instalar como app
+   → Clique em "Compartilhar" (navegador)
+   → Escolha "Adicionar à tela inicial" (Android)
+     OU "Adicionar ao início" (iOS)
+   → Pronto! Tem um ícone na tela inicial do seu celular
+
+════════════════════════════════════════════════════════════════════
+
+✅ PRONTO!
+
+Seu app está 100% funcional na web!
+
+• Acessa de qualquer celular
+• Dados salvos na nuvem (Supabase)
+• Sincroniza em tempo real
+• Funciona offline (parcialmente)
+
+════════════════════════════════════════════════════════════════════
+
+ANOTAÇÕES (para guardar):
+
+Projeto Supabase: _________________________________________________
+
+Project URL: _____________________________________________________
+
+Anon Key: ________________________________________________________
+
+Link do app (Vercel/Netlify): ____________________________________
+
+Senha do banco: __________________________________________________
+
+════════════════════════════════════════════════════════════════════
+
+SE DER ERRO:
+
+Erro: "Erro de autenticação"
+Causa: config.js tem valores errados
+Solução: Volta, copia novamente do Supabase, cola em config.js
+
+Erro: "Tabelas não existem"
+Causa: SQL não rodou
+Solução: Volta no Supabase, SQL Editor, executa schema.sql de novo
+
+Erro: Página branca
+Causa: Algo deu errado
+Solução: Abre F12 (DevTools), vê o console, procura pela mensagem
+
+Erro: Sem internet
+Causa: App está offline
+Solução: Espera conexão voltar, app sincroniza automaticamente
+
+════════════════════════════════════════════════════════════════════
+
+Perguntas? Leia:
+  - COMECE_AQUI.txt (rápido)
+  - O_QUE_E_ISSO.md (entendimento)
+  - SETUP.md (passo a passo)
+  - README.md (referência)
+
+════════════════════════════════════════════════════════════════════
+
+BOA SORTE! 🚀
+
+App pronto em 15 minutos. Sem programação necessária!
+
+════════════════════════════════════════════════════════════════════

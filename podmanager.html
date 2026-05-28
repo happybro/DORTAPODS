@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PodManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#08090a;--s1:#111214;--s2:#18191c;--s3:#222428;--s4:#2a2d32;
+  --br:#2e3238;--br2:#383c44;
+  --tx:#f1f2f4;--tx2:#9aa0ad;--tx3:#5a6070;
+  --ac:#00e5a0;--ac2:#00b87a;--ac-d:rgba(0,229,160,.1);
+  --re:#ff4f4f;--re-d:rgba(255,79,79,.1);
+  --ye:#ffb800;--ye-d:rgba(255,184,0,.1);
+  --bl:#4f9eff;--bl-d:rgba(79,158,255,.1);
+  --pu:#a855f7;--pu-d:rgba(168,85,247,.1);
+  --nav:62px;--r:12px;--r2:8px;
+  --sans:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);display:flex;flex-direction:column}
+#app{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--nav)+16px);-webkit-overflow-scrolling:touch}
+
+/* LOADING */
+#loading-overlay{position:fixed;inset:0;background:var(--bg);z-index:999;
+  flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#loading-spinner{width:36px;height:36px;border:3px solid var(--s3);
+  border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading-msg{font-family:var(--mono);font-size:12px;color:var(--tx3)}
+
+/* TOPBAR */
+.topbar{padding:16px 16px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-dot{width:10px;height:10px;background:var(--ac);border-radius:50%;box-shadow:0 0 0 4px var(--ac-d);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 4px var(--ac-d)}50%{box-shadow:0 0 0 8px transparent}}
+.brand-name{font-size:20px;font-weight:800;letter-spacing:-.5px}
+.brand-name span{color:var(--ac)}
+.header-time{font-family:var(--mono);font-size:11px;color:var(--tx3)}
+
+/* SCREENS */
+.sc{display:none;padding:0 16px;animation:up .2s ease}
+.sc.on{display:block}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* SECTION */
+.stitle{font-size:18px;font-weight:700;margin-bottom:4px;letter-spacing:-.3px}
+.ssub{font-size:12px;color:var(--tx3);font-family:var(--mono);margin-bottom:18px}
+
+/* NAV */
+.nav{flex-shrink:0;height:var(--nav);background:var(--s1);border-top:1px solid var(--br);display:flex;z-index:100}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  border:none;background:none;cursor:pointer;color:var(--tx3);
+  font-family:var(--sans);font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  transition:color .15s;position:relative;padding:0}
+.nb.on{color:var(--ac)}
+.nb.on::before{content:'';position:absolute;top:0;left:25%;right:25%;height:2px;
+  background:var(--ac);border-radius:0 0 4px 4px;box-shadow:0 0 8px var(--ac)}
+.ni{font-size:20px;line-height:1}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--br);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.card-title{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
+  color:var(--tx3);font-family:var(--mono);margin-bottom:12px}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.kpi{background:var(--s1);border:1px solid var(--br);border-radius:var(--r);padding:14px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;top:-20px;right:-20px;width:70px;height:70px;border-radius:50%;opacity:.06}
+.kpi.green::after{background:var(--ac)}.kpi.blue::after{background:var(--bl)}
+.kpi.yellow::after{background:var(--ye)}.kpi.purple::after{background:var(--pu)}.kpi.red::after{background:var(--re)}
+.kpi-icon{font-size:22px;margin-bottom:8px;display:block}
+.kpi-val{font-family:var(--mono);font-size:22px;font-weight:600;line-height:1;margin-bottom:3px}
+.kpi-val.green{color:var(--ac)}.kpi-val.blue{color:var(--bl)}
+.kpi-val.yellow{color:var(--ye)}.kpi-val.purple{color:var(--pu)}.kpi-val.red{color:var(--re)}
+.kpi-lbl{font-size:11px;color:var(--tx3);font-weight:500}
+.kpi-full{grid-column:1/-1}
+
+/* LOW ALERT */
+.low-alert{background:var(--re-d);border:1px solid var(--re);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.low-alert-title{font-size:12px;font-weight:700;color:var(--re);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.low-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;
+  border-bottom:1px solid rgba(255,79,79,.15);font-size:13px}
+.low-item:last-child{border-bottom:none}
+.low-qty{font-family:var(--mono);font-size:12px;color:var(--re);font-weight:600;background:var(--re-d);padding:2px 8px;border-radius:20px}
+
+/* FIELDS */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--tx3);
+  letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)}
+.fi{width:100%;background:var(--s2);border:1px solid var(--br);border-radius:var(--r2);
+  padding:13px 14px;color:var(--tx);font-family:var(--sans);font-size:15px;font-weight:500;
+  outline:none;transition:border-color .15s;-webkit-appearance:none}
+.fi:focus{border-color:var(--ac)}
+.fi::placeholder{color:var(--tx3)}
+.fi-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+select.fi option{background:var(--s2)}
+
+/* AUTOCOMPLETE */
+.ac-wrap{position:relative}
+.ac-drop{position:absolute;top:100%;left:0;right:0;z-index:50;margin-top:4px;
+  background:var(--s2);border:1px solid var(--br2);border-radius:var(--r2);
+  overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.6);max-height:220px;overflow-y:auto}
+.ac-item{padding:12px 14px;font-size:14px;cursor:pointer;display:flex;
+  justify-content:space-between;align-items:center;transition:background .1s}
+.ac-item:active,.ac-item:hover{background:var(--s3)}
+.ac-item-name{font-weight:600}
+.ac-item-sub{font-family:var(--mono);font-size:11px;color:var(--tx3)}
+
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:16px;border:none;border-radius:var(--r);
+  font-family:var(--sans);font-size:15px;font-weight:700;cursor:pointer;
+  transition:opacity .12s,transform .1s;letter-spacing:.1px}
+.btn:active{transform:scale(.98);opacity:.85}
+.btn-ac{background:var(--ac);color:#000}
+.btn-re{background:var(--re);color:#fff}
+.btn-bl{background:var(--bl);color:#000}
+.btn-ye{background:var(--ye);color:#000}
+.btn-ghost{background:var(--s2);color:var(--tx);border:1px solid var(--br)}
+.btn-sm{padding:10px 16px;font-size:13px;width:auto;border-radius:var(--r2)}
+.btn-xs{padding:7px 12px;font-size:12px;width:auto;border-radius:var(--r2)}
+.btn-row{display:flex;gap:8px;margin-top:10px}
+.btn-row .btn{flex:1}
+
+/* PRODUTO CARD */
+.prod-card{background:var(--s1);border:1px solid var(--br);border-radius:var(--r);padding:14px;margin-bottom:8px}
+.prod-card.low{border-color:var(--re)}
+.prod-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.prod-name{font-size:15px;font-weight:700;margin-bottom:2px}
+.prod-flavor{font-size:12px;color:var(--tx3);font-family:var(--mono)}
+.prod-qty{font-family:var(--mono);font-size:24px;font-weight:600;text-align:right}
+.prod-qty.ok{color:var(--ac)}.prod-qty.low{color:var(--ye)}.prod-qty.zero{color:var(--re)}
+.prod-qty-lbl{font-size:10px;color:var(--tx3);text-align:right}
+.prod-prices{display:flex;gap:8px;flex-wrap:wrap}
+.price-tag{background:var(--s2);border-radius:6px;padding:5px 10px;font-family:var(--mono);font-size:11px}
+.price-tag span{color:var(--tx3);margin-right:4px}
+.prod-actions{display:flex;gap:6px;margin-top:10px}
+
+/* PEDIDO ITEM */
+.ped-item{background:var(--s2);border:1px solid var(--br);border-radius:var(--r2);
+  padding:12px;margin-bottom:8px}
+.ped-item-row{display:flex;align-items:center;gap:10px}
+.ped-item-info{flex:1;min-width:0}
+.ped-item-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ped-item-sub{font-size:11px;color:var(--tx3);font-family:var(--mono)}
+.ped-item-total{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ac);white-space:nowrap}
+.qty-ctrl{display:flex;align-items:center;gap:6px}
+.qbtn{width:32px;height:32px;border-radius:6px;border:none;cursor:pointer;
+  font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  transition:opacity .1s,transform .1s;flex-shrink:0}
+.qbtn:active{transform:scale(.9)}
+.qbtn-m{background:var(--s3);color:var(--tx)}
+.qbtn-p{background:var(--ac);color:#000}
+.qnum{font-family:var(--mono);font-size:16px;font-weight:600;min-width:28px;text-align:center}
+.rmv-btn{background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0}
+.rmv-btn:active{color:var(--re)}
+
+/* Preço editável inline */
+.ped-preco-edit{
+  background:var(--s3);border:1px solid var(--br2);border-radius:6px;
+  color:var(--ye);font-family:var(--mono);font-size:13px;font-weight:600;
+  width:80px;padding:4px 8px;outline:none;text-align:center;margin-top:6px}
+.ped-preco-edit:focus{border-color:var(--ye)}
+
+.ped-total-bar{background:var(--s2);border:1px solid var(--br2);border-radius:var(--r);
+  padding:14px;margin:12px 0;display:flex;justify-content:space-between;align-items:center}
+.ped-total-lbl{font-size:12px;color:var(--tx3);font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.ped-total-val{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--ac)}
+
+/* PEDIDO CARD (histórico) */
+.ped-card{background:var(--s1);border:1px solid var(--br);border-radius:var(--r);padding:14px;margin-bottom:8px}
+.ped-card.pendente{border-left:3px solid var(--ye)}
+.ped-card.finalizado{border-left:3px solid var(--ac)}
+.ped-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.ped-card-client{font-size:15px;font-weight:700}
+.ped-card-date{font-size:11px;color:var(--tx3);font-family:var(--mono);margin-top:2px}
+.ped-card-right{text-align:right}
+.ped-card-total{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--ac)}
+.ped-card-lucro{font-size:11px;color:var(--tx3);font-family:var(--mono)}
+.ped-card-items{font-size:12px;color:var(--tx2);line-height:1.7;margin-bottom:8px}
+
+/* STATUS BADGE */
+.status-badge{display:inline-flex;align-items:center;gap:4px;
+  padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;
+  font-family:var(--mono);letter-spacing:.5px}
+.status-pendente{background:var(--ye-d);color:var(--ye)}
+.status-finalizado{background:var(--ac-d);color:var(--ac)}
+
+/* HIST */
+.hist-item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--br)}
+.hist-item:last-child{border-bottom:none}
+.hist-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.hist-icon.entrada{background:var(--ac-d)}.hist-icon.saida{background:var(--re-d)}.hist-icon.pedido{background:var(--bl-d)}
+.hist-body{flex:1;min-width:0}
+.hist-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.hist-sub{font-size:11px;color:var(--tx3);font-family:var(--mono)}
+.hist-val{font-family:var(--mono);font-size:13px;font-weight:600;white-space:nowrap}
+.hv-gr{color:var(--ac)}.hv-re{color:var(--re)}.hv-bl{color:var(--bl)}
+
+/* TABS */
+.tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px}
+.tab{flex-shrink:0;padding:8px 16px;border-radius:20px;border:1px solid var(--br);
+  background:none;color:var(--tx3);font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .12s}
+.tab.on{background:var(--ac);color:#000;border-color:var(--ac)}
+
+/* OVERLAY / SHEET */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;
+  display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.on{opacity:1;pointer-events:all}
+.sheet{background:var(--s1);border-radius:20px 20px 0 0;border:1px solid var(--br);
+  border-bottom:none;padding:20px 16px 40px;width:100%;
+  transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);
+  max-height:92vh;overflow-y:auto}
+.overlay.on .sheet{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;background:var(--br2);border-radius:2px;margin:0 auto 16px}
+.sheet-title{font-size:17px;font-weight:700;margin-bottom:4px}
+.sheet-sub{font-size:12px;color:var(--tx3);font-family:var(--mono);margin-bottom:14px}
+
+/* WA */
+.wa-text{background:var(--s2);border:1px solid var(--br);border-radius:var(--r2);
+  padding:14px;font-family:var(--mono);font-size:13px;line-height:1.7;
+  white-space:pre-wrap;color:var(--tx);max-height:260px;overflow-y:auto;margin-bottom:14px}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 20px;color:var(--tx3)}
+.empty-icon{font-size:40px;margin-bottom:10px}
+.empty-text{font-size:13px;font-family:var(--mono)}
+
+/* CONFIRM BOX */
+.confirm-box{background:var(--re-d);border:1px solid var(--re);border-radius:var(--r);
+  padding:14px;margin-bottom:12px}
+.confirm-box-title{font-size:13px;font-weight:700;color:var(--re);margin-bottom:4px}
+.confirm-box-sub{font-size:12px;color:var(--tx3);margin-bottom:12px}
+
+/* TOAST */
+#toast{position:fixed;bottom:calc(var(--nav)+10px);left:12px;right:12px;z-index:300;
+  padding:14px 18px;border-radius:var(--r);font-size:14px;font-weight:600;text-align:center;
+  transform:translateY(16px);opacity:0;transition:all .22s ease;pointer-events:none}
+#toast.on{transform:translateY(0);opacity:1}
+.t-ac{background:var(--ac);color:#000}.t-re{background:var(--re);color:#fff}
+.t-ye{background:var(--ye);color:#000}.t-wa{background:#25D366;color:#fff}
+
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--br2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay" style="display:flex">
+  <div id="loading-spinner"></div>
+  <div class="brand-name">Pod<span>Manager</span></div>
+  <div id="loading-msg">Iniciando...</div>
+</div>
+
+<div id="app">
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <div class="brand-name">Pod<span>Manager</span></div>
+  </div>
+  <div class="header-time" id="htime"></div>
+</div>
+
+<!-- ══ DASHBOARD ══ -->
+<div class="sc on" id="sc-dash">
+  <div id="low-alert-wrap"></div>
+  <div class="kpi-grid">
+    <div class="kpi green"><span class="kpi-icon">📦</span><div class="kpi-val green" id="kpi-estoque">0</div><div class="kpi-lbl">Unidades</div></div>
+    <div class="kpi blue"><span class="kpi-icon">🛒</span><div class="kpi-val blue" id="kpi-pedidos">0</div><div class="kpi-lbl">Pedidos</div></div>
+    <div class="kpi yellow"><span class="kpi-icon">⏳</span><div class="kpi-val yellow" id="kpi-pendentes">0</div><div class="kpi-lbl">Pendentes</div></div>
+    <div class="kpi purple"><span class="kpi-icon">💰</span><div class="kpi-val purple" id="kpi-vendido">R$0</div><div class="kpi-lbl">Faturado</div></div>
+    <div class="kpi green kpi-full"><span class="kpi-icon">📈</span><div class="kpi-val green" id="kpi-lucro">R$0</div><div class="kpi-lbl">Lucro bruto</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Últimas movimentações</div>
+    <div id="dash-hist"></div>
+  </div>
+</div>
+
+<!-- ══ PRODUTOS ══ -->
+<div class="sc" id="sc-produtos">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div><div class="stitle">Produtos</div><div class="ssub" style="margin-bottom:0" id="prod-count">0 produtos</div></div>
+    <button class="btn btn-ac btn-sm" onclick="abrirModalProd()">+ Novo</button>
+  </div>
+  <div class="tabs">
+    <button class="tab on" onclick="filtrarProds(this,'todos')">Todos</button>
+    <button class="tab" onclick="filtrarProds(this,'baixo')">⚠ Baixo</button>
+    <button class="tab" onclick="filtrarProds(this,'zero')">✕ Zerado</button>
+  </div>
+  <div id="prod-list"></div>
+</div>
+
+<!-- ══ ENTRADA ══ -->
+<div class="sc" id="sc-entrada">
+  <div class="stitle">Entrada de Estoque</div>
+  <div class="ssub">Registrar compra de mercadoria</div>
+
+  <div class="tabs">
+    <button class="tab on" id="tab-manual" onclick="switchEntrada(this,'manual')">✏️ Manual</button>
+    <button class="tab" id="tab-lista" onclick="switchEntrada(this,'lista')">📋 Colar Lista</button>
+  </div>
+
+  <!-- MANUAL -->
+  <div id="entrada-manual">
+    <div class="card">
+      <div class="card-title">Novo lote</div>
+      <div id="lote-rows"></div>
+      <button class="btn btn-ghost" style="margin-bottom:12px" onclick="addLoteRow()">+ Adicionar produto</button>
+      <button class="btn btn-ac" onclick="confirmarEntrada()">✓ Confirmar entrada</button>
+    </div>
+  </div>
+
+  <!-- COLAR LISTA -->
+  <div id="entrada-lista" style="display:none">
+    <div class="card">
+      <div class="card-title">Formato aceito</div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--tx3);line-height:1.8;margin-bottom:12px">
+        <div style="color:var(--tx2)">Marca no topo, depois quantidade + nome:</div>
+        <div style="margin-top:6px;padding:10px;background:var(--s2);border-radius:8px;color:var(--tx)">V150 Pro<br>05  Berry Blast<br>20  Icy Mint<br>10  Watermelon Mix</div>
+      </div>
+      <div class="field">
+        <label>Cole a lista aqui</label>
+        <textarea class="fi" id="lista-input" rows="12"
+          placeholder="V150 Pro&#10;05  Berry Blast&#10;20  Icy Mint&#10;&#10;Elfbar&#10;10  Mango Ice"
+          style="resize:vertical;line-height:1.7;font-family:var(--mono);font-size:13px"></textarea>
+      </div>
+      <button class="btn btn-ghost" style="margin-bottom:10px" onclick="processarLista()">👁 Visualizar</button>
+    </div>
+
+    <!-- PREVIEW -->
+    <div id="lista-preview" style="display:none">
+      <div class="card">
+        <div class="card-title" id="lista-preview-title">Produtos identificados</div>
+        <div id="lista-preview-items"></div>
+        <div class="btn-row" style="margin-top:4px">
+          <button class="btn btn-ghost" onclick="document.getElementById('lista-preview').style.display='none'">Editar lista</button>
+          <button class="btn btn-ac" onclick="confirmarEntradaLista()">✓ Confirmar tudo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="hist-entradas"></div>
+</div>
+
+<!-- ══ PEDIDO NOVO/EDITAR ══ -->
+<div class="sc" id="sc-pedido">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+    <div class="stitle" id="ped-screen-title">Novo Pedido</div>
+    <div id="ped-status-wrap"></div>
+  </div>
+  <div class="ssub" id="ped-screen-sub">Rápido e fácil</div>
+
+  <!-- CLIENTE -->
+  <div class="card">
+    <div class="field">
+      <label>Nome do cliente</label>
+      <input class="fi" id="ped-cliente" type="text" placeholder="Ex: João Silva" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Observação (opcional)</label>
+      <input class="fi" id="ped-obs" type="text" placeholder="Ex: pagou no Pix">
+    </div>
+  </div>
+
+  <!-- BUSCA DE PRODUTOS -->
+  <div class="card">
+    <div class="field">
+      <label>🔍 Filtrar produtos</label>
+      <input class="fi" id="ped-filtro" type="text" placeholder="Buscar por nome..." autocomplete="off"
+        oninput="renderProdutosParaPedido()">
+    </div>
+  </div>
+
+  <!-- LISTA DE PRODUTOS -->
+  <div class="card">
+    <div class="card-title">Produtos disponíveis</div>
+    <div id="ped-prods-list" style="max-height:400px;overflow-y:auto"></div>
+  </div>
+
+  <!-- CARRINHO -->
+  <div id="ped-itens-wrap" style="display:none">
+    <div class="card">
+      <div class="card-title">🛒 Carrinho</div>
+      <div id="ped-itens-list"></div>
+      <div class="ped-total-bar">
+        <div class="ped-total-lbl">Total</div>
+        <div class="ped-total-val" id="ped-total">R$ 0,00</div>
+      </div>
+      <div style="font-size:11px;color:var(--tx3);margin-bottom:12px">
+        Lucro: <span id="ped-lucro-val">R$ 0,00</span>
+      </div>
+      <div id="ped-action-buttons"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VENDAS (histórico) ══ -->
+<div class="sc" id="sc-historico">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div><div class="stitle">Vendas</div><div class="ssub" style="margin-bottom:0" id="hist-count">0 pedidos</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="gerarListaEstoque()">📋 Lista WA</button>
+  </div>
+  <div class="tabs">
+    <button class="tab on" onclick="filtrarPedidos(this,'todos')">Todos</button>
+    <button class="tab" onclick="filtrarPedidos(this,'pendente')">⏳ Pendentes</button>
+    <button class="tab" onclick="filtrarPedidos(this,'finalizado')">✓ Finalizados</button>
+  </div>
+  <div id="ped-hist-list"></div>
+</div>
+
+</div><!-- /app -->
+
+<nav class="nav">
+  <button class="nb on" id="nb-dash"      onclick="goTo('dash',this)"><span class="ni">📊</span>Dashboard</button>
+  <button class="nb"    id="nb-produtos"  onclick="goTo('produtos',this)"><span class="ni">📦</span>Produtos</button>
+  <button class="nb"    id="nb-entrada"   onclick="goTo('entrada',this)"><span class="ni">📥</span>Entrada</button>
+  <button class="nb"    id="nb-pedido"    onclick="novoPedido()"><span class="ni">🛒</span>Pedido</button>
+  <button class="nb"    id="nb-historico" onclick="goTo('historico',this)"><span class="ni">🧾</span>Vendas</button>
+</nav>
+
+<!-- MODAL PRODUTO -->
+<div class="overlay" id="modal-prod" onclick="fecharOverlay(event,'modal-prod')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="mprod-title">Novo Produto</div>
+    <div class="sheet-sub">Preencha os dados do produto</div>
+    <input type="hidden" id="mprod-id">
+    <div class="field"><label>Nome do produto</label>
+      <input class="fi" id="mprod-nome" type="text" placeholder="Ex: Ignite, Lost Mary, Elfbar"></div>
+    <div class="field"><label>Sabor</label>
+      <input class="fi" id="mprod-sabor" type="text" placeholder="Ex: Melancia, Morango Kiwi"></div>
+    <div class="fi-row">
+      <div class="field"><label>Compra (R$)</label>
+        <input class="fi" id="mprod-compra" type="number" step="0.01" placeholder="0,00" inputmode="decimal"></div>
+      <div class="field"><label>Venda (R$)</label>
+        <input class="fi" id="mprod-venda" type="number" step="0.01" placeholder="0,00" inputmode="decimal"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ac" onclick="salvarProduto()">Salvar</button>
+      <button class="btn btn-ghost" onclick="fecharModal('modal-prod')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL WHATSAPP -->
+<div class="overlay" id="modal-wa" onclick="fecharOverlay(event,'modal-wa')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="wa-title">Mensagem</div>
+    <div class="sheet-sub" id="wa-sub"></div>
+    <div class="wa-text" id="wa-text"></div>
+    <div class="btn-row">
+      <button class="btn btn-ac" onclick="copiarWA()">📋 Copiar</button>
+      <button class="btn btn-ghost" onclick="fecharModal('modal-wa')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR -->
+<div class="overlay" id="modal-confirm" onclick="fecharOverlay(event,'modal-confirm')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="confirm-title">Confirmar</div>
+    <div class="sheet-sub" id="confirm-sub"></div>
+    <div class="btn-row">
+      <button class="btn btn-re" id="confirm-ok">Confirmar</button>
+      <button class="btn btn-ghost" onclick="fecharModal('modal-confirm')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

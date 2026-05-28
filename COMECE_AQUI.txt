@@ -1,0 +1,239 @@
+═══════════════════════════════════════════════════════════════════
+  PODMANAGER — COMECE AQUI (15 MINUTOS)
+═══════════════════════════════════════════════════════════════════
+
+Se não sabe nem por onde começar, leia isto primeiro!
+
+───────────────────────────────────────────────────────────────────
+ENTENDIMENTO RÁPIDO (2 min)
+───────────────────────────────────────────────────────────────────
+
+Seu app precisa de 3 coisas:
+
+1. BANCO DE DADOS (Supabase) — grátis
+   └─ Armazena produtos, pedidos, estoque
+
+2. HOSPEDAGEM NA WEB (Vercel) — grátis
+   └─ Deixa seu app acessível de qualquer celular/computador
+
+3. CÓDIGO (HTML/CSS/JS) — já está pronto
+   └─ Você só precisa conectar aos dois acima
+
+═══════════════════════════════════════════════════════════════════
+
+───────────────────────────────────────────────────────────────────
+PASSO 1: BANCO DE DADOS (5 min)
+───────────────────────────────────────────────────────────────────
+
+URL: https://supabase.com
+
+Ações:
+1. Clique "Sign Up" (ou Sign In se já tem conta)
+2. Crie conta (email + senha, ou GitHub)
+3. Clique "New Project"
+4. Preencha:
+   - Project Name: "podmanager" (ou outro nome)
+   - Database Password: coloque uma senha (qualquer uma)
+   - Region: escolha São Paulo (ou outra perto do Brasil)
+5. Clique "Create new project"
+6. AGUARDE 2-3 MINUTOS (está criando)
+
+Agora você tem um banco vazio. Precisa criar as tabelas.
+
+Próximo passo:
+1. Clique em "SQL Editor" (no menu à esquerda)
+2. Clique em "New Query"
+3. Abra o arquivo: sql/schema.sql (de sua pasta)
+4. COPIE TUDO (Ctrl+A, Ctrl+C)
+5. Cole no Supabase (Ctrl+V)
+6. Clique no botão "Run" (canto inferior direito)
+7. Pronto! As tabelas foram criadas ✓
+
+Agora você precisa das CREDENCIAIS:
+1. Clique em "Settings" (menu à esquerda)
+2. Clique em "API"
+3. Você verá:
+   - Project URL (copie)
+   - Anon public key (copie)
+
+Guarde essas 2 coisas num papel/bloco de notas.
+
+═══════════════════════════════════════════════════════════════════
+
+───────────────────────────────────────────────────────────────────
+PASSO 2: CONFIGURAR O CÓDIGO (1 min)
+───────────────────────────────────────────────────────────────────
+
+Arquivo: js/config.js
+
+Abra esse arquivo. Você verá:
+
+export const SUPABASE_URL      = 'https://SEU_PROJETO.supabase.co';
+export const SUPABASE_ANON_KEY = 'SUA_ANON_KEY_AQUI';
+
+Substitua pelos valores que copiou do Supabase:
+
+ANTES:
+export const SUPABASE_URL      = 'https://SEU_PROJETO.supabase.co';
+export const SUPABASE_ANON_KEY = 'SUA_ANON_KEY_AQUI';
+
+DEPOIS (seu próprio projeto):
+export const SUPABASE_URL      = 'https://abcdef123456.supabase.co';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+
+Salve (Ctrl+S).
+
+Pronto! Código está configurado ✓
+
+═══════════════════════════════════════════════════════════════════
+
+───────────────────────────────────────────────────────────────────
+PASSO 3: COLOCAR NA WEB (5 min)
+───────────────────────────────────────────────────────────────────
+
+Escolha uma opção:
+
+OPÇÃO A: VERCEL (recomendado)
+───────
+URL: https://vercel.com
+
+Passos:
+1. Clique "Sign Up"
+2. Use GitHub (mais rápido) ou email
+3. Confirme email (verifica caixa de entrada)
+4. Você está logado
+5. Clique em "Add New" (canto superior)
+6. Selecione "Project"
+7. Escolha "Deploy Manually"
+8. Arraste a pasta "dortapods" inteira para a área
+   OU faça upload dos arquivos (podmanager.html + pasta js + pasta sql)
+9. Clique em "Deploy"
+10. ESPERE alguns segundos
+11. Você recebe um link tipo: https://podmanager-xyz.vercel.app
+
+Pronto! Seu app está na web ✓
+
+─────────────────────────────────────────────────────────────────
+
+OPÇÃO B: NETLIFY
+───────────────
+URL: https://netlify.com
+
+Passos:
+1. Clique "Sign up"
+2. Use email ou GitHub
+3. Confirme email
+4. Na página inicial, você verá uma área tipo:
+   "Drag and drop your site folder here"
+5. Arraste a pasta "dortapods" inteira
+6. ESPERE alguns segundos
+7. Você recebe um link tipo: https://podmanager-xyz.netlify.app
+
+Pronto! Seu app está na web ✓
+
+═══════════════════════════════════════════════════════════════════
+
+───────────────────────────────────────────────────────────────────
+PASSO 4: TESTAR NO CELULAR (2 min)
+───────────────────────────────────────────────────────────────────
+
+Link que você recebeu (Vercel ou Netlify):
+https://podmanager-xyz.vercel.app
+(ou .netlify.app, dependendo do que escolheu)
+
+Pegue esse link e:
+
+1. Compartilhe com seu celular:
+   - WhatsApp (mande pra você mesmo)
+   - Email (mande pra você mesmo)
+   - Qualquer outro jeito
+
+2. Abra no navegador do celular (Chrome, Firefox, Safari, etc)
+
+3. Você verá o PodManager em tela cheia!
+
+4. (Opcional) Instale como app:
+   - Android: clique em "Compartilhar" → "Adicionar à tela inicial"
+   - iOS: clique em "Compartilhar" → "Adicionar ao início"
+   - Pronto! Tem um ícone na tela inicial do seu celular
+
+═══════════════════════════════════════════════════════════════════
+
+───────────────────────────────────────────────────────────────────
+NA PRIMEIRA ABERTURA
+───────────────────────────────────────────────────────────────────
+
+Se você tem dados antigos (do app original):
+
+O app vai:
+1. Detectar dados no localStorage
+2. Migrar para Supabase automaticamente
+3. Limpar localStorage
+4. Você continua usando normalmente
+
+Tudo automático! Não precisa fazer nada especial.
+
+═══════════════════════════════════════════════════════════════════
+
+───────────────────────────────────────────────────────────────────
+CHECKLIST FINAL
+───────────────────────────────────────────────────────────────────
+
+[ ] Criei conta no Supabase
+[ ] Criei novo projeto
+[ ] Executei o SQL (schema.sql)
+[ ] Copiei Project URL e Anon Key
+[ ] Preenchei js/config.js
+[ ] Subi para Vercel ou Netlify
+[ ] Testei no celular
+[ ] Funcionando! ✓
+
+═══════════════════════════════════════════════════════════════════
+
+───────────────────────────────────────────────────────────────────
+ARQUIVOS IMPORTANTES
+───────────────────────────────────────────────────────────────────
+
+LEIA NESTA ORDEM:
+
+1. Este arquivo (COMECE_AQUI.txt) ← você está aqui
+2. O_QUE_E_ISSO.md (explicação do que é tudo)
+3. SETUP.md (guia detalhado com mais screenshots mentais)
+4. README.md (referência completa)
+
+EDITE:
+
+1. js/config.js (OBRIGATÓRIO — colocar suas credenciais)
+
+NÃO MEXA:
+
+- podmanager.html
+- js/ (todos os outros arquivos)
+- sql/schema.sql
+- Outro arquivo
+
+═══════════════════════════════════════════════════════════════════
+
+───────────────────────────────────────────────────────────────────
+SUPORTE RÁPIDO
+───────────────────────────────────────────────────────────────────
+
+Erro: "Erro de autenticação"
+Solução: config.js está errado, copia novamente do Supabase
+
+Erro: "Tabelas não existem"
+Solução: SQL não rodou, volta e executa de novo no Supabase
+
+Erro: Página em branco
+Solução: Abre F12, vê o console (Ctrl+Shift+I), procura pela mensagem
+
+Sem internet?
+Solução: App trabalha do cache, quando conectar sincroniza
+
+═══════════════════════════════════════════════════════════════════
+
+Qualquer dúvida nos detalhes, leia SETUP.md ou O_QUE_E_ISSO.md!
+
+BOA SORTE! 🚀
+
+═══════════════════════════════════════════════════════════════════
