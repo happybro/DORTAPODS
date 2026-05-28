@@ -1,0 +1,149 @@
+═══════════════════════════════════════════════════════════════════
+  PODMANAGER — ÍNDICE COMPLETO DOS ARQUIVOS
+═══════════════════════════════════════════════════════════════════
+
+LEIA NA SEGUINTE ORDEM:
+
+1️⃣  COMECE_AQUI.txt
+    Explicação rápida: 3 coisas que você precisa fazer em 15 min
+    👉 COMECE AQUI SE NÃO SABE POR ONDE COMEÇAR
+
+2️⃣  O_QUE_E_ISSO.md
+    Explicação: o que é Supabase, Vercel, localhost, etc
+    👉 LEIA SE QUISER ENTENDER O FUNCIONAMENTO
+
+3️⃣  FLUXOGRAMA_VISUAL.txt
+    Diagramas: como os dados fluem entre celular → Supabase → tela
+    👉 LEIA SE QUER VER VISUALMENTE COMO FUNCIONA
+
+4️⃣  SETUP.md
+    Guia detalhado: passo a passo com screenshots mentais
+    👉 LEIA DURANTE A CONFIGURAÇÃO
+
+5️⃣  README.md
+    Referência completa: recursos, arquitetura, troubleshooting
+    👉 CONSULTE DEPOIS PARA DÚVIDAS
+
+═══════════════════════════════════════════════════════════════════
+
+ARQUIVOS DO PROJETO:
+
+📄 podmanager.html
+   └─ O app (interface, layout, modais)
+   └─ EDIT: nunca (já está pronto)
+   └─ Import: js/app.js (módulo JavaScript)
+
+📁 js/ (PASTA — lógica do app)
+   │
+   ├─ config.js
+   │  └─ Suas credenciais do Supabase
+   │  └─ EDIT: SIM! Coloque aqui o SUPABASE_URL e SUPABASE_ANON_KEY
+   │  └─ Contém: 2 linhas apenas (as credenciais)
+   │
+   ├─ supabase.js
+   │  └─ Cliente Supabase (conecta ao banco)
+   │  └─ EDIT: nunca
+   │  └─ Usa: config.js (pega credenciais)
+   │
+   ├─ state.js
+   │  └─ Cache em memória (dados locais do app)
+   │  └─ EDIT: nunca
+   │  └─ Contém: prods, pedidos, entradas, movs
+   │
+   ├─ utils.js
+   │  └─ Funções auxiliares (formatação, toast, validação)
+   │  └─ EDIT: nunca (a menos que queira customizar mensagens)
+   │  └─ Contém: uid(), R(), fmtDt(), toast(), erroToast(), sanitize()
+   │
+   ├─ app.js
+   │  └─ TODA a lógica principal (maior arquivo)
+   │  └─ EDIT: nunca (a menos que queira adicionar features)
+   │  └─ Contém: renderização, navegação, modais, eventos
+   │
+   ├─ produtos.api.js
+   │  └─ CRUD de produtos + estoque
+   │  └─ EDIT: nunca
+   │  └─ Funções: carregarProdutos(), salvarProduto(), atualizarEstoque()
+   │
+   ├─ pedidos.api.js
+   │  └─ CRUD de pedidos + controle de estoque
+   │  └─ EDIT: nunca
+   │  └─ Funções: carregarPedidos(), salvarPedido(), cancelarPedido()
+   │
+   ├─ entradas.api.js
+   │  └─ Registro de entradas de estoque
+   │  └─ EDIT: nunca
+   │  └─ Funções: carregarEntradas(), registrarEntrada()
+   │
+   ├─ movimentacoes.api.js
+   │  └─ Histórico de movimentações
+   │  └─ EDIT: nunca
+   │  └─ Funções: carregarMovs(), registrarMov()
+   │
+   └─ migrar.js
+      └─ Migração automática: localStorage → Supabase
+      └─ EDIT: nunca
+      └─ Executa: só na primeira vez (detecta dados antigos)
+
+📁 sql/ (PASTA — banco de dados)
+   │
+   └─ schema.sql
+      └─ SQL para criar tabelas no Supabase
+      └─ EDIT: nunca (a menos que queira mudar estrutura do banco)
+      └─ Contém: CREATE TABLE, índices, triggers, RLS, RPC
+
+═══════════════════════════════════════════════════════════════════
+
+FLUXO: O que você precisa fazer
+
+1. CRIAR BANCO (Supabase)
+   └─ Acesse supabase.com
+   └─ Crie novo projeto
+   └─ Execute schema.sql no SQL Editor
+   └─ Copie credenciais (URL + Key)
+
+2. CONFIGURAR CÓDIGO
+   └─ Edite: js/config.js
+   └─ Cole: SUPABASE_URL e SUPABASE_ANON_KEY
+   └─ Salve arquivo
+
+3. HOSPEDAR NA WEB (Vercel ou Netlify)
+   └─ Suba pasta dortapods inteira
+   └─ Receba um link (https://podmanager-xyz.vercel.app)
+   └─ Acesse no celular
+
+4. USAR!
+   └─ App migra dados antigos automaticamente
+   └─ Usa Supabase como banco
+   └─ Funciona sincronizado em vários celulares
+
+═══════════════════════════════════════════════════════════════════
+
+PARA ENTENDER MELHOR:
+
+Estrutura de dados:
+  └─ FLUXOGRAMA_VISUAL.txt
+
+Passo a passo de configuração:
+  └─ SETUP.md
+
+Referência completa:
+  └─ README.md
+
+O que é tudo isso:
+  └─ O_QUE_E_ISSO.md
+
+═══════════════════════════════════════════════════════════════════
+
+RESUMO: VOCÊ SÓ PRECISA EDITAR config.js
+
+Todos os outros arquivos são automáticos. A única coisa que você
+coloca é:
+
+  js/config.js:
+    export const SUPABASE_URL      = 'https://seu-projeto.supabase.co';
+    export const SUPABASE_ANON_KEY = 'sua-chave-aqui';
+
+Tudo mais é automático! ✓
+
+═══════════════════════════════════════════════════════════════════
