@@ -1,0 +1,238 @@
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                     PODMANAGER — ARQUITETURA VISUAL                          ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        SEU CELULAR / COMPUTADOR                             │
+│                                                                             │
+│  ┌──────────────────────────────────────────────────────────────────┐     │
+│  │                     podmanager.html                              │     │
+│  │  (Tela bonita, botões, inputs, dashboard)                       │     │
+│  │                                                                  │     │
+│  │  Você clica aqui ↓                                              │     │
+│  │  "Criar novo produto", "Finalizar pedido", etc                 │     │
+│  └──────────────────────────────────────────────────────────────────┘     │
+│                            ↓                                                │
+│  ┌──────────────────────────────────────────────────────────────────┐     │
+│  │                      js/app.js                                   │     │
+│  │  (Lógica principal — o que fazer quando você clica)             │     │
+│  │                                                                  │     │
+│  │  Chama as funções API:                                          │     │
+│  │  - produtos.api.js                                             │     │
+│  │  - pedidos.api.js                                              │     │
+│  │  - entradas.api.js                                             │     │
+│  │  - movimentacoes.api.js                                        │     │
+│  └──────────────────────────────────────────────────────────────────┘     │
+│                            ↓                                                │
+│  ┌──────────────────────────────────────────────────────────────────┐     │
+│  │                    js/supabase.js                                │     │
+│  │  (Conecta ao Supabase usando credenciais de config.js)         │     │
+│  │                                                                  │     │
+│  │  Com as credenciais:                                            │     │
+│  │  - SUPABASE_URL = 'https://seu-projeto.supabase.co'           │     │
+│  │  - SUPABASE_ANON_KEY = 'sua-chave-publica'                    │     │
+│  └──────────────────────────────────────────────────────────────────┘     │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                  ↓
+                            ┌──────────┐
+                            │ INTERNET │
+                            └──────────┘
+                                  ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      SUPABASE (Banco de Dados)                              │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────┐      │
+│  │ Tabelas:                                                        │      │
+│  │                                                                 │      │
+│  │ ┌─────────────────┐  ┌─────────────────┐  ┌──────────────────┐│      │
+│  │ │   produtos      │  │   pedidos       │  │  pedido_itens    ││      │
+│  │ ├─────────────────┤  ├─────────────────┤  ├──────────────────┤│      │
+│  │ │ id              │  │ id              │  │ id               ││      │
+│  │ │ nome            │  │ cliente         │  │ pedido_id (FK)   ││      │
+│  │ │ sabor           │  │ obs             │  │ prod_id (FK)     ││      │
+│  │ │ compra          │  │ status          │  │ nome             ││      │
+│  │ │ venda           │  │ total           │  │ sabor            ││      │
+│  │ │ estoque ⚡      │  │ lucro           │  │ qtd              ││      │
+│  │ │ criado_em       │  │ criado_em       │  │ venda            ││      │
+│  │ └─────────────────┘  └─────────────────┘  └──────────────────┘│      │
+│  │                                                                 │      │
+│  │ ┌──────────────────┐  ┌────────────────────────────────────┐ │      │
+│  │ │   entradas       │  │   movimentacoes                    │ │      │
+│  │ ├──────────────────┤  ├────────────────────────────────────┤ │      │
+│  │ │ id               │  │ id                                 │ │      │
+│  │ │ prod_id (FK)     │  │ tipo (entrada/saida/pedido)       │ │      │
+│  │ │ nome             │  │ descricao                          │ │      │
+│  │ │ qtd              │  │ valor                              │ │      │
+│  │ │ custo            │  │ criado_em                          │ │      │
+│  │ │ criado_em        │  └────────────────────────────────────┘ │      │
+│  │ └──────────────────┘                                          │      │
+│  │                                                                 │      │
+│  │ ⚡ RPC: rpc_atualizar_estoque()                               │      │
+│  │    (Garante que estoque nunca fica negativo)                 │      │
+│  └─────────────────────────────────────────────────────────────────┘      │
+│                                                                             │
+│  Hospedado na: Amazon Web Services (AWS)                                   │
+│  Seguro? Sim (HTTPS, criptografado)                                       │
+│  Grátis? Sim (até 500MB)                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                      FLUXO: VOCÊ CRIA UM PRODUTO                             ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────────────┐
+│ 1. VOCÊ DIGITA NO APP                                              │
+│    "Elfbar" | "Berry Blast" | R$5 | R$15                          │
+│    Clica botão "Salvar"                                           │
+└────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ 2. app.js EXECUTA: salvarProduto()                                │
+│    ↓                                                               │
+│    Pega os dados do formulário                                   │
+│    Valida (nome vazio? valor negativo?)                          │
+│    Chama: produtos.api.salvarProduto({...})                      │
+└────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ 3. produtos.api.js EXECUTA: salvarProduto()                      │
+│    ↓                                                               │
+│    Transforma dados (normalização)                               │
+│    Chama: sb.from('produtos').upsert(row)                        │
+│    Aguarda resposta do Supabase                                  │
+└────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ 4. SUPABASE RECEBE                                                │
+│    ↓                                                               │
+│    Insert/Update na tabela "produtos"                            │
+│    Triggers: atualiza "atualizado_em" automaticamente            │
+│    Pronto!                                                       │
+└────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ 5. RESPOSTA VOLTA PARA O APP                                     │
+│    ↓                                                               │
+│    produtos.api.js recebe resposta                               │
+│    Atualiza state.prods[id] (cache em memória)                   │
+│    Retorna para app.js                                           │
+└────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ 6. app.js FINALIZA                                               │
+│    ↓                                                               │
+│    Fecha modal                                                   │
+│    Mostra toast: "✓ Produto cadastrado"                          │
+│    Chama renderProds() — tela atualiza                           │
+│    Produto aparece na lista!                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                      FLUXO: VOCÊ FINALIZA UM PEDIDO                          ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────────────┐
+│ 1. VOCÊ CLICA "Finalizar"                                        │
+│    Pedido tem itens:                                             │
+│    - 2x Elfbar Berry Blast @ R$15 = R$30                         │
+│    - 1x Lost Mary Mint @ R$10 = R$10                             │
+└────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ 2. app.js EXECUTA: salvarPedido('finalizado')                    │
+│    ↓                                                               │
+│    Pega dados do formulário                                      │
+│    Calcula total (R$40) e lucro                                  │
+│    Chama: pedidos.api.salvarPedido(pedAtual, 'finalizado')       │
+└────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ 3. pedidos.api.js EXECUTA                                        │
+│    ↓                                                               │
+│    VERIFICA ESTOQUE:                                             │
+│    - Elfbar tem 5 em estoque, preciso de 2? OK ✓               │
+│    - Lost Mary tem 3 em estoque, preciso de 1? OK ✓             │
+│    ↓                                                               │
+│    BAIXA ESTOQUE (para cada item):                              │
+│    - Elfbar: 5 - 2 = 3                                          │
+│    - Lost Mary: 3 - 1 = 2                                       │
+│    ↓                                                               │
+│    Usa: atualizarEstoque(id, -qtd) [RPC atômica no Supabase]   │
+│    ↓                                                               │
+│    UPSERT pedido na tabela "pedidos"                            │
+│    DELETE items antigos de pedido_itens                         │
+│    INSERT items novos de pedido_itens                           │
+└────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ 4. SUPABASE PROCESSA                                             │
+│    ↓                                                               │
+│    RPC: estoque atômico (sem race condition)                    │
+│    Triggers: atualiza "atualizado_em"                           │
+│    Tudo sincronizado                                            │
+└────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ 5. RESPOSTA VOLTA                                                │
+│    ↓                                                               │
+│    pedidos.api.js atualiza state.pedidos                        │
+│    Chama movimentacoes.api.registrarMov()                       │
+│    Registra: "Pedido finalizado — João Silva — R$40"           │
+└────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌────────────────────────────────────────────────────────────────────┐
+│ 6. app.js FINALIZA                                               │
+│    ↓                                                               │
+│    Mostra toast: "✓ Pedido finalizado! Lucro: R$X"             │
+│    Gera mensagem WhatsApp automática                            │
+│    Abre modal com msg para copiar pro WhatsApp                 │
+│    Atualiza dashboard (vê novo faturamento, novo lucro)        │
+│    Estoque atualizado (Elfbar: 5→3, Lost Mary: 3→2)           │
+└────────────────────────────────────────────────────────────────────┘
+
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                        ONDE CADA COISA FUNCIONA                              ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+Frontend (seu celular):
+  ✓ Interface (UI)
+  ✓ Validações básicas
+  ✓ Cache em memória (state.js)
+  ✓ Lógica de negócio (app.js)
+
+Backend (Supabase — nuvem):
+  ✓ Armazenamento permanente
+  ✓ Validações de integridade (RLS, constraints)
+  ✓ Operações atômicas (RPC)
+  ✓ Relacionamentos (FK)
+  ✓ Triggers (automação)
+
+Hospedagem (Vercel/Netlify):
+  ✓ Deixa o HTML/CSS/JS acessível na web
+  ✓ HTTPS automático (seguro)
+  ✓ CDN global (rápido em qualquer lugar)
+
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                      RESUMO: QUEM FAZ O QUÊ?                                ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+config.js
+  └─ Você EDITA com suas credenciais
+
+podmanager.html + js/
+  └─ Você NÃO MEXA (já está pronto)
+
+Supabase
+  └─ Você cria conta, executa SQL, depois usa
+
+Vercel/Netlify
+  └─ Você faz upload, eles hospedam
+
+Resultado:
+  └─ App 100% funcional online! 🎉
+
