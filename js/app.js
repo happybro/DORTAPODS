@@ -845,6 +845,7 @@ Object.assign(window, {
   confirmarEntrada, switchEntrada,
   processarLista, confirmarEntradaLista,
   // pedido
+  renderProdutosParaPedido, adicionarProdutoRapido,
   pedBusca, selecionarPedProd, fechaAcPed, ajustarPedQtd, addItemPedido,
   editarPreco, pedQtd, remItemPed, salvarPedido, cancelarFinalizacao,
   // histórico
