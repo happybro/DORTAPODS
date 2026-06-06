@@ -805,48 +805,47 @@ async function init() {
   setInterval(updateTime, 30000);
   setLoading(true, 'Iniciando DortaPods...');
 
-  try {
-    // Timeout de segurança (30 segundos)
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout ao carregar dados')), 30000)
-    );
+  // Inicializar state vazio
+  state.prods = {};
+  state.pedidos = [];
+  state.entradas = [];
+  state.movs = [];
 
-    const loadPromise = (async () => {
-      try {
-        setLoading(true, 'Verificando dados locais...');
-        const migrou = await Promise.race([migrarLocalStorage(), timeoutPromise]);
-        if (migrou) toast('✓ Dados migrados!');
-      } catch (e) {
-        console.warn('[Init] Aviso migração:', e.message);
-        // Continua mesmo se migração falhar
-      }
+  // Carregar dados em background (não bloqueia)
+  (async () => {
+    try {
+      await migrarLocalStorage().catch(() => {});
+      await ProdAPI.carregarProdutos().catch(() => {});
+      await PedidosAPI.carregarPedidos().catch(() => {});
+      await MovsAPI.carregarMovs().catch(() => {});
+      await EntradasAPI.carregarEntradas().catch(() => {});
 
-      setLoading(true, 'Carregando produtos...');
-      await Promise.race([ProdAPI.carregarProdutos(), timeoutPromise]);
+      // Renderizar após carregar
+      renderDash();
+      console.log('[Init] ✓ Dados carregados');
+    } catch (e) {
+      console.warn('[Init] Erro ao carregar:', e.message);
+    }
+  })();
 
-      setLoading(true, 'Carregando pedidos...');
-      await Promise.race([PedidosAPI.carregarPedidos(), timeoutPromise]);
-
-      setLoading(true, 'Carregando movimentações...');
-      await Promise.race([MovsAPI.carregarMovs(), timeoutPromise]);
-
-      setLoading(true, 'Carregando entradas...');
-      await Promise.race([EntradasAPI.carregarEntradas(), timeoutPromise]);
-    })();
-
-    await loadPromise;
-  } catch (e) {
-    console.error('[Init] Erro:', e.message);
+  // Mostrar tela IMEDIATAMENTE (não espera dados)
+  setTimeout(() => {
     setLoading(false);
-    toast('⚠️ Erro ao conectar. Continuando offline...', 're');
-    // NÃO retorna - continua mesmo com erro
-  }
+    pedAtual = {
+      id: uid(),
+      cliente: '',
+      obs: '',
+      status: 'pendente',
+      itens: [],
+      total: 0,
+      lucro: 0,
+      ts: Date.now()
+    };
 
-  setLoading(false);
-
-  pedAtual = { id: uid(), cliente: '', obs: '', status: 'pendente', itens: [], total: 0, lucro: 0, ts: Date.now() };
-  renderDash();
-  renderEntrada();
+    renderDash();
+    renderEntrada();
+    console.log('[Init] ✓ App pronto!');
+  }, 500); // Espera apenas 500ms antes de mostrar
 }
 
 // ══════════════════════════════════════════════════════════════════
