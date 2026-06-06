@@ -8,14 +8,16 @@ import { getFirestore, enableIndexedDbPersistence } from "https://www.gstatic.co
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
 // Configuração do Firebase (pública, é seguro)
+// ⚠️ IMPORTANTE: Atualize com suas credenciais reais do Firebase!
+// Veja: FIREBASE-SETUP-RAPIDO.md para instruções (2 minutos)
+// Estas são credenciais de exemplo/teste
 const firebaseConfig = {
-  apiKey: "AIzaSyDiN8K_V8pZkE1W2x3Y4Z5a6B7c8D9e0F1g",
-  authDomain: "dortapods-app.firebaseapp.com",
-  projectId: "dortapods-app",
-  storageBucket: "dortapods-app.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef1234567890abcd",
-  measurementId: "G-ABCDEFGHIJ"
+  apiKey: "AIzaSyDxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  authDomain: "dortapods-sandbox.firebaseapp.com",
+  projectId: "dortapods-sandbox",
+  storageBucket: "dortapods-sandbox.appspot.com",
+  messagingSenderId: "1234567890",
+  appId: "1:1234567890:web:abcdef1234567890abcd"
 };
 
 // Inicializar Firebase
