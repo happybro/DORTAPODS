@@ -23,32 +23,37 @@ function normItem(i) {
 }
 
 function normPedido(p) {
-  // Converter criado para timestamp (pode ser Firestore Timestamp ou Date)
+  if (!p) return null;
+
   let ts = Date.now();
-  if (p.criado) {
-    if (typeof p.criado.toDate === 'function') {
-      ts = new Date(p.criado.toDate()).getTime();
-    } else if (p.criado instanceof Date) {
-      ts = p.criado.getTime();
-    } else if (typeof p.criado === 'number') {
-      ts = p.criado;
+  try {
+    if (p.criado) {
+      if (typeof p.criado.toDate === 'function') {
+        ts = new Date(p.criado.toDate()).getTime();
+      } else if (p.criado instanceof Date) {
+        ts = p.criado.getTime();
+      } else if (typeof p.criado === 'number') {
+        ts = p.criado;
+      }
     }
+  } catch (err) {
+    console.warn('[PedAPI] Erro ao converter data:', err);
   }
 
   return {
-    id:      p.id,
-    cliente: p.cliente,
+    id:      p.id || '',
+    cliente: p.cliente || '',
     obs:     p.obs || '',
-    status:  p.status,
-    total:   parseFloat(p.total)  || 0,
-    lucro:   parseFloat(p.lucro)  || 0,
+    status:  p.status || 'pendente',
+    total:   parseFloat(p.total) || 0,
+    lucro:   parseFloat(p.lucro) || 0,
     ts:      ts,
     itens:   (p.itens || []).map(i => ({
-      prodId: i.prodId,
-      nome:   i.nome,
-      sabor:  i.sabor,
-      qtd:    parseInt(i.qtd),
-      venda:  parseFloat(i.venda),
+      prodId: i.prodId || '',
+      nome:   i.nome || '',
+      sabor:  i.sabor || '',
+      qtd:    parseInt(i.qtd) || 0,
+      venda:  parseFloat(i.venda) || 0,
     })),
   };
 }

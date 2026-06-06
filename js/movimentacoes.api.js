@@ -8,22 +8,27 @@ import { state } from './state.js';
 import { uid } from './utils.js';
 
 function norm(m) {
-  // Converter criado para timestamp (pode ser Firestore Timestamp ou Date)
+  if (!m) return null;
+
   let ts = Date.now();
-  if (m.criado) {
-    if (typeof m.criado.toDate === 'function') {
-      ts = new Date(m.criado.toDate()).getTime();
-    } else if (m.criado instanceof Date) {
-      ts = m.criado.getTime();
-    } else if (typeof m.criado === 'number') {
-      ts = m.criado;
+  try {
+    if (m.criado) {
+      if (typeof m.criado.toDate === 'function') {
+        ts = new Date(m.criado.toDate()).getTime();
+      } else if (m.criado instanceof Date) {
+        ts = m.criado.getTime();
+      } else if (typeof m.criado === 'number') {
+        ts = m.criado;
+      }
     }
+  } catch (err) {
+    console.warn('[MovAPI] Erro ao converter data:', err);
   }
 
   return {
-    id:   m.id,
-    tipo: m.tipo,
-    desc: m.descricao,
+    id:   m.id || '',
+    tipo: m.tipo || '',
+    desc: m.descricao || '',
     val:  m.valor || '',
     ts:   ts,
   };
