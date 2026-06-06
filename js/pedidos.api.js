@@ -23,6 +23,18 @@ function normItem(i) {
 }
 
 function normPedido(p) {
+  // Converter criado para timestamp (pode ser Firestore Timestamp ou Date)
+  let ts = Date.now();
+  if (p.criado) {
+    if (typeof p.criado.toDate === 'function') {
+      ts = new Date(p.criado.toDate()).getTime();
+    } else if (p.criado instanceof Date) {
+      ts = p.criado.getTime();
+    } else if (typeof p.criado === 'number') {
+      ts = p.criado;
+    }
+  }
+
   return {
     id:      p.id,
     cliente: p.cliente,
@@ -30,7 +42,7 @@ function normPedido(p) {
     status:  p.status,
     total:   parseFloat(p.total)  || 0,
     lucro:   parseFloat(p.lucro)  || 0,
-    ts:      p.criado ? new Date(p.criado.toDate()).getTime() : Date.now(),
+    ts:      ts,
     itens:   (p.itens || []).map(i => ({
       prodId: i.prodId,
       nome:   i.nome,

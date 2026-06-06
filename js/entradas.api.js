@@ -12,13 +12,25 @@ import { atualizarEstoque } from './produtos.api.js';
 let _registrandoEntrada = false;
 
 function norm(e) {
+  // Converter criado para timestamp (pode ser Firestore Timestamp ou Date)
+  let ts = Date.now();
+  if (e.criado) {
+    if (typeof e.criado.toDate === 'function') {
+      ts = new Date(e.criado.toDate()).getTime();
+    } else if (e.criado instanceof Date) {
+      ts = e.criado.getTime();
+    } else if (typeof e.criado === 'number') {
+      ts = e.criado;
+    }
+  }
+
   return {
     id:     e.id,
     prodId: e.prodId,
     nome:   e.nome,
     qtd:    parseInt(e.qtd),
     custo:  parseFloat(e.valor_compra) || 0,
-    ts:     e.criado ? new Date(e.criado.toDate()).getTime() : Date.now(),
+    ts:     ts,
   };
 }
 

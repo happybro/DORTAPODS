@@ -8,12 +8,24 @@ import { state } from './state.js';
 import { uid } from './utils.js';
 
 function norm(m) {
+  // Converter criado para timestamp (pode ser Firestore Timestamp ou Date)
+  let ts = Date.now();
+  if (m.criado) {
+    if (typeof m.criado.toDate === 'function') {
+      ts = new Date(m.criado.toDate()).getTime();
+    } else if (m.criado instanceof Date) {
+      ts = m.criado.getTime();
+    } else if (typeof m.criado === 'number') {
+      ts = m.criado;
+    }
+  }
+
   return {
     id:   m.id,
     tipo: m.tipo,
     desc: m.descricao,
     val:  m.valor || '',
-    ts:   m.criado ? new Date(m.criado.toDate()).getTime() : Date.now(),
+    ts:   ts,
   };
 }
 

@@ -9,6 +9,21 @@ import { uid, sanitize } from './utils.js';
 
 // ── normalização: doc do banco → objeto usado no app ────────────
 function norm(p) {
+  // Converter criado para timestamp (pode ser Firestore Timestamp ou Date)
+  let criado = Date.now();
+  if (p.criado) {
+    if (typeof p.criado.toDate === 'function') {
+      // É um Firestore Timestamp
+      criado = new Date(p.criado.toDate()).getTime();
+    } else if (p.criado instanceof Date) {
+      // É uma Date JavaScript
+      criado = p.criado.getTime();
+    } else if (typeof p.criado === 'number') {
+      // É um timestamp numérico
+      criado = p.criado;
+    }
+  }
+
   return {
     id:      p.id,
     nome:    p.nome,
@@ -16,7 +31,7 @@ function norm(p) {
     compra:  parseFloat(p.compra)  || 0,
     venda:   parseFloat(p.venda)   || 0,
     estoque: parseInt(p.estoque)   || 0,
-    criado:  p.criado ? new Date(p.criado.toDate()).getTime() : Date.now(),
+    criado:  criado,
   };
 }
 
