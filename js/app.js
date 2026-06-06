@@ -298,9 +298,27 @@ function switchEntrada(btn, modo) {
   btn.classList.add('on');
   document.getElementById('entrada-manual').style.display = modo === 'manual' ? 'block' : 'none';
   document.getElementById('entrada-lista').style.display  = modo === 'lista'  ? 'block' : 'none';
+
+  // ✅ Auto-focus quando mudar para modo lista
+  if (modo === 'lista') {
+    setTimeout(() => document.getElementById('lista-input')?.focus(), 100);
+  }
 }
 
 // ── Parser de lista colada ─────────────────────────────────────────
+// ✅ Listener para processar com Ctrl+Enter
+document.addEventListener('DOMContentLoaded', () => {
+  const listaInput = document.getElementById('lista-input');
+  if (listaInput) {
+    listaInput.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        processarLista();
+      }
+    });
+  }
+}, { once: true });
+
 function processarLista() {
   const raw = document.getElementById('lista-input').value.trim();
   if (!raw) { toast('Cole uma lista primeiro', 're'); return; }
@@ -371,82 +389,59 @@ function processarLista() {
   document.getElementById('lista-preview-title').textContent =
     `${listaParseada.length} produto(s) ${linhasComErro.length > 0 ? `(${linhasComErro.length} ignoradas)` : ''}`;
 
+  // ✅ PREVIEW MINIMALISTA - lista rápida e limpa
   document.getElementById('lista-preview-items').innerHTML = listaParseada.map((item, idx) => {
     const nomeCompleto = (item.marca ? item.marca + ' ' : '') + item.nome;
-
-    // ✅ Matching inteligente (fuzzy search)
     const encontrado = Object.values(state.prods).find(p => {
       const fullName = (p.nome + ' ' + p.sabor).toLowerCase();
       const itemName = nomeCompleto.toLowerCase();
-
-      return fullName === itemName ||
-             p.sabor.toLowerCase() === item.nome.toLowerCase() ||
-             fullName.includes(itemName) ||
-             itemName.includes(p.sabor.toLowerCase());
+      return fullName === itemName || p.sabor.toLowerCase() === item.nome.toLowerCase() ||
+             fullName.includes(itemName) || itemName.includes(p.sabor.toLowerCase());
     });
-
-    const tag = encontrado
-      ? `<span class="status-badge status-finalizado">✓ ${encontrado.nome}</span>`
-      : `<span class="status-badge status-pendente">novo produto</span>`;
-
-    return `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--br)">
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:700">${nomeCompleto}</div>
-          <div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-top:2px">${tag}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" value="${item.qtd}" min="1" inputmode="numeric"
-            id="lp-qty-${idx}"
-            style="width:60px;background:var(--s2);border:1px solid var(--br);border-radius:6px;
-              color:var(--tx);font-family:var(--mono);font-size:15px;font-weight:700;
-              text-align:center;padding:6px 4px;outline:none">
-          <span style="font-size:11px;color:var(--tx3)">un.</span>
-        </div>
-      </div>`;
+    const tag = encontrado ? '✓' : 'novo';
+    return `<div style="font-size:13px;padding:6px 0;display:flex;justify-content:space-between">
+      <span>${nomeCompleto} <span style="color:var(--tx3)">(${tag})</span></span>
+      <strong style="font-family:var(--mono);color:var(--ac)">${item.qtd} un.</strong>
+    </div>`;
   }).join('');
 
   document.getElementById('lista-preview').style.display = 'block';
-  toast(`✓ ${listaParseada.length} produto(s) identificado(s)`, 'ac');
-  document.getElementById('lista-preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  toast(`✓ Pronto! ${listaParseada.length} item(ns)`, 'ac');
+
+  // ✅ Foco automático no botão Confirmar (pra clicar com um Enter)
+  setTimeout(() => {
+    const btn = document.getElementById('btn-confirmar-lista');
+    if (btn) btn.focus();
+  }, 100);
 }
 
 async function confirmarEntradaLista() {
   // ✓ PROTEÇÃO: Anti-duplicação de clique
-  if (_confirmarListaEntrada) { toast('Processando... aguarde', 'ye'); return; }
+  if (_confirmarListaEntrada) { toast('Processando...', 'ye'); return; }
   _confirmarListaEntrada = true;
 
   try {
     if (!listaParseada.length) return;
 
-    let adicionados = 0, criados = 0, erros = [];
-    let processados = 0;
+    let adicionados = 0, criados = 0;
+    const btn = document.getElementById('btn-confirmar-lista');
+    if (btn) btn.disabled = true;
 
     for (const [idx, item] of listaParseada.entries()) {
       try {
         const qtdEl = document.getElementById('lp-qty-' + idx);
         let qtd = parseInt(qtdEl ? qtdEl.value : item.qtd) || 0;
-
-        // ✅ Validação inteligente
-        if (!qtd || qtd <= 0) {
-          erros.push(`${item.nome}: quantidade inválida`);
-          continue;
-        }
-
-        if (qtd > 999999) {
-          qtd = 999999;
-        }
+        if (!qtd || qtd <= 0) continue;
+        qtd = Math.min(qtd, 999999);
 
         const nomeCompleto = (item.marca ? item.marca + ' ' : '') + item.nome;
 
-        // ✅ Busca inteligente com fuzzy matching
+        // ✅ Busca inteligente
         let prod = Object.values(state.prods).find(p => {
           const fullName = (p.nome + ' ' + p.sabor).toLowerCase();
           const itemName = nomeCompleto.toLowerCase();
-          return fullName === itemName ||
-                 p.sabor.toLowerCase() === item.nome.toLowerCase() ||
-                 fullName.includes(itemName) ||
-                 itemName.includes(p.sabor.toLowerCase());
+          return fullName === itemName || p.sabor.toLowerCase() === item.nome.toLowerCase() ||
+                 fullName.includes(itemName) || itemName.includes(p.sabor.toLowerCase());
         });
 
         // ✅ Criar produto se não existir
@@ -459,73 +454,48 @@ async function confirmarEntradaLista() {
               venda: 0
             });
             criados++;
-          } catch (err) {
-            erros.push(`${item.nome}: erro ao criar produto`);
-            continue;
-          }
+          } catch (err) { continue; }
         }
 
-        // ✅ Registrar entrada com tratamento de erro
+        // ✅ Registrar entrada
         try {
-          await EntradasAPI.registrarEntrada({
-            prodId: prod.id,
-            nome: prod.nome + ' ' + prod.sabor,
-            qtd,
-            custo: prod.compra
-          });
-
-          await MovsAPI.registrarMov({
-            tipo: 'entrada',
-            desc: `+${qtd}x ${prod.nome} ${prod.sabor}`,
-            val: `+${qtd} un.`
-          }).catch(() => {}); // Não falha se movimentação falhar
-
+          await EntradasAPI.registrarEntrada({ prodId: prod.id, nome: prod.nome + ' ' + prod.sabor, qtd, custo: prod.compra });
+          await MovsAPI.registrarMov({ tipo: 'entrada', desc: `+${qtd}x ${prod.nome} ${prod.sabor}`, val: `+${qtd} un.` }).catch(() => {});
           adicionados++;
-        } catch (err) {
-          erros.push(`${nomeCompleto}: erro ao registrar (estoque)`);
-          continue;
-        }
+        } catch (err) { continue; }
 
-        processados++;
-
-        // ✅ Feedback a cada 5 produtos
-        if (processados % 5 === 0) {
-          document.getElementById('lista-preview-title').textContent =
-            `Processando... ${processados}/${listaParseada.length}`;
+        // ✅ Feedback visual rápido (a cada 3 itens)
+        if (adicionados % 3 === 0) {
+          document.getElementById('lista-preview-title').textContent = `✓ ${adicionados}/${listaParseada.length}...`;
         }
-      } catch (e) {
-        erros.push(`Linha ${item.linha}: erro desconhecido`);
-      }
+      } catch (e) { /* silencioso */ }
     }
 
-    // ✅ Resultado detalhado
     if (!adicionados) {
       toast('❌ Nenhum item foi adicionado', 're');
       return;
     }
 
+    // ✅ Limpeza e resultado
     document.getElementById('lista-input').value = '';
     document.getElementById('lista-preview').style.display = 'none';
     listaParseada = [];
 
-    const msg = criados > 0
-      ? `✓ ${adicionados} adicionados (${criados} novos)`
-      : `✓ ${adicionados} unidades registradas`;
-
-    toast(msg + (erros.length > 0 ? ` (${erros.length} erros)` : ''), 'ac');
-
-    // ✅ Alertar erros se houver
-    if (erros.length > 0) {
-      console.warn('[Lista] Erros:', erros);
-      toast(`⚠️ ${erros.length} linha(s) com erro - veja console`, 'ye');
-    }
-
+    const msg = criados > 0 ? `✓ ${adicionados} adicionado(s) • ${criados} novo(s)` : `✓ ${adicionados} un. registradas!`;
+    toast(msg, 'ac');
     renderHistEntradas();
+
+    // ✅ Habilitar novo cadastro imediatamente
+    setTimeout(() => {
+      document.getElementById('lista-input').focus();
+    }, 200);
   } catch (e) {
-    console.error('[Lista] Erro crítico:', e);
-    toast('❌ Erro ao processar lista: ' + e.message, 're');
+    console.error('[Lista]', e);
+    toast('❌ ' + e.message, 're');
   } finally {
     _confirmarListaEntrada = false;
+    const btn = document.getElementById('btn-confirmar-lista');
+    if (btn) btn.disabled = false;
   }
 }
 
