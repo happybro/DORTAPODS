@@ -307,40 +307,98 @@ function processarLista() {
 
   listaParseada = [];
   let marcaAtual = '';
+  const linhasComErro = [];
 
-  raw.split('\n').forEach(linha => {
+  raw.split('\n').forEach((linha, lineNum) => {
     linha = linha.trim();
     if (!linha) return;
-    const m = linha.match(/^(\d+)\s+(.+)$/);
-    if (m) {
-      listaParseada.push({ marca: marcaAtual, nome: m[2].trim(), qtd: parseInt(m[1]) });
-    } else {
-      marcaAtual = linha;
+
+    // ✅ Suportar múltiplos formatos:
+    // "100 Produto Nome"
+    // "100x Produto Nome"
+    // "100 - Produto Nome"
+    // "Produto Nome: 100"
+    // "Produto Nome (100)"
+
+    let qtd = 0;
+    let nome = '';
+
+    // Formato: "100 Produto" ou "100x Produto"
+    const m1 = linha.match(/^(\d+)x?\s+(.+)$/i);
+    if (m1) {
+      qtd = parseInt(m1[1]);
+      nome = m1[2].trim();
     }
+
+    // Formato: "Produto: 100" ou "Produto (100)"
+    const m2 = linha.match(/^(.+?)[:\s]\(?\d+\)?\s*$/) || linha.match(/^(.+?)[:\s]+(\d+)\s*$/);
+    if (!qtd && m2) {
+      const match = linha.match(/(\d+)$/);
+      if (match) {
+        qtd = parseInt(match[1]);
+        nome = linha.replace(/\d+\s*$/, '').trim().replace(/[():]/, '');
+      }
+    }
+
+    // Se não é número, é marca/categoria
+    if (!qtd && isNaN(parseInt(linha.charAt(0)))) {
+      marcaAtual = linha;
+      return;
+    }
+
+    // Validação
+    if (!nome || qtd <= 0) {
+      linhasComErro.push(lineNum + 1);
+      return;
+    }
+
+    listaParseada.push({
+      marca: marcaAtual,
+      nome: nome.replace(/[()]/g, '').trim(),
+      qtd,
+      linha: lineNum + 1
+    });
   });
 
-  if (!listaParseada.length) { toast('Não encontrei produtos. Verifique o formato.', 're'); return; }
+  if (!listaParseada.length) {
+    toast(linhasComErro.length > 0
+      ? `❌ Linhas inválidas: ${linhasComErro.join(', ')}`
+      : '❌ Nenhum produto válido encontrado', 're');
+    return;
+  }
 
-  document.getElementById('lista-preview-title').textContent = `${listaParseada.length} produto(s) identificado(s)`;
+  // Renderizar preview
+  document.getElementById('lista-preview-title').textContent =
+    `${listaParseada.length} produto(s) ${linhasComErro.length > 0 ? `(${linhasComErro.length} ignoradas)` : ''}`;
+
   document.getElementById('lista-preview-items').innerHTML = listaParseada.map((item, idx) => {
     const nomeCompleto = (item.marca ? item.marca + ' ' : '') + item.nome;
-    const encontrado = Object.values(state.prods).find(p =>
-      (p.nome + ' ' + p.sabor).toLowerCase() === nomeCompleto.toLowerCase() ||
-      p.sabor.toLowerCase() === item.nome.toLowerCase()
-    );
+
+    // ✅ Matching inteligente (fuzzy search)
+    const encontrado = Object.values(state.prods).find(p => {
+      const fullName = (p.nome + ' ' + p.sabor).toLowerCase();
+      const itemName = nomeCompleto.toLowerCase();
+
+      return fullName === itemName ||
+             p.sabor.toLowerCase() === item.nome.toLowerCase() ||
+             fullName.includes(itemName) ||
+             itemName.includes(p.sabor.toLowerCase());
+    });
+
     const tag = encontrado
-      ? `<span class="status-badge status-finalizado">✓ cadastrado</span>`
-      : `<span class="status-badge status-pendente">novo</span>`;
+      ? `<span class="status-badge status-finalizado">✓ ${encontrado.nome}</span>`
+      : `<span class="status-badge status-pendente">novo produto</span>`;
+
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--br)">
-        <div>
+        <div style="flex:1">
           <div style="font-size:13px;font-weight:700">${nomeCompleto}</div>
           <div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-top:2px">${tag}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
           <input type="number" value="${item.qtd}" min="1" inputmode="numeric"
             id="lp-qty-${idx}"
-            style="width:56px;background:var(--s2);border:1px solid var(--br);border-radius:6px;
+            style="width:60px;background:var(--s2);border:1px solid var(--br);border-radius:6px;
               color:var(--tx);font-family:var(--mono);font-size:15px;font-weight:700;
               text-align:center;padding:6px 4px;outline:none">
           <span style="font-size:11px;color:var(--tx3)">un.</span>
@@ -349,49 +407,125 @@ function processarLista() {
   }).join('');
 
   document.getElementById('lista-preview').style.display = 'block';
+  toast(`✓ ${listaParseada.length} produto(s) identificado(s)`, 'ac');
   document.getElementById('lista-preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function confirmarEntradaLista() {
   // ✓ PROTEÇÃO: Anti-duplicação de clique
-  if (_confirmarListaEntrada) { toast('Processando lista... aguarde', 're'); return; }
+  if (_confirmarListaEntrada) { toast('Processando... aguarde', 'ye'); return; }
   _confirmarListaEntrada = true;
 
   try {
     if (!listaParseada.length) return;
-    let adicionados = 0, criados = 0;
+
+    let adicionados = 0, criados = 0, erros = [];
+    let processados = 0;
 
     for (const [idx, item] of listaParseada.entries()) {
-      const qtdEl = document.getElementById('lp-qty-' + idx);
-      const qtd   = parseInt(qtdEl ? qtdEl.value : item.qtd) || 0;
-      if (qtd <= 0) continue;
+      try {
+        const qtdEl = document.getElementById('lp-qty-' + idx);
+        let qtd = parseInt(qtdEl ? qtdEl.value : item.qtd) || 0;
 
-      const nomeCompleto = (item.marca ? item.marca + ' ' : '') + item.nome;
-      let prod = Object.values(state.prods).find(p =>
-        (p.nome + ' ' + p.sabor).toLowerCase() === nomeCompleto.toLowerCase() ||
-        p.sabor.toLowerCase() === item.nome.toLowerCase()
-      );
+        // ✅ Validação inteligente
+        if (!qtd || qtd <= 0) {
+          erros.push(`${item.nome}: quantidade inválida`);
+          continue;
+        }
 
-      if (!prod) {
-        prod = await ProdAPI.salvarProduto({ nome: item.marca || 'Sem marca', sabor: item.nome, compra: 0, venda: 0 });
-        criados++;
+        if (qtd > 999999) {
+          qtd = 999999;
+        }
+
+        const nomeCompleto = (item.marca ? item.marca + ' ' : '') + item.nome;
+
+        // ✅ Busca inteligente com fuzzy matching
+        let prod = Object.values(state.prods).find(p => {
+          const fullName = (p.nome + ' ' + p.sabor).toLowerCase();
+          const itemName = nomeCompleto.toLowerCase();
+          return fullName === itemName ||
+                 p.sabor.toLowerCase() === item.nome.toLowerCase() ||
+                 fullName.includes(itemName) ||
+                 itemName.includes(p.sabor.toLowerCase());
+        });
+
+        // ✅ Criar produto se não existir
+        if (!prod) {
+          try {
+            prod = await ProdAPI.salvarProduto({
+              nome: item.marca || 'Importado',
+              sabor: item.nome,
+              compra: 0,
+              venda: 0
+            });
+            criados++;
+          } catch (err) {
+            erros.push(`${item.nome}: erro ao criar produto`);
+            continue;
+          }
+        }
+
+        // ✅ Registrar entrada com tratamento de erro
+        try {
+          await EntradasAPI.registrarEntrada({
+            prodId: prod.id,
+            nome: prod.nome + ' ' + prod.sabor,
+            qtd,
+            custo: prod.compra
+          });
+
+          await MovsAPI.registrarMov({
+            tipo: 'entrada',
+            desc: `+${qtd}x ${prod.nome} ${prod.sabor}`,
+            val: `+${qtd} un.`
+          }).catch(() => {}); // Não falha se movimentação falhar
+
+          adicionados++;
+        } catch (err) {
+          erros.push(`${nomeCompleto}: erro ao registrar (estoque)`);
+          continue;
+        }
+
+        processados++;
+
+        // ✅ Feedback a cada 5 produtos
+        if (processados % 5 === 0) {
+          document.getElementById('lista-preview-title').textContent =
+            `Processando... ${processados}/${listaParseada.length}`;
+        }
+      } catch (e) {
+        erros.push(`Linha ${item.linha}: erro desconhecido`);
       }
-
-      await EntradasAPI.registrarEntrada({ prodId: prod.id, nome: prod.nome + ' ' + prod.sabor, qtd, custo: prod.compra });
-      await MovsAPI.registrarMov({ tipo: 'entrada', desc: `+${qtd}x ${prod.nome} ${prod.sabor}`, val: `+${qtd} un.` });
-      adicionados++;
     }
 
-    if (!adicionados) { toast('Nenhum item válido', 're'); return; }
-    document.getElementById('lista-input').value         = '';
+    // ✅ Resultado detalhado
+    if (!adicionados) {
+      toast('❌ Nenhum item foi adicionado', 're');
+      return;
+    }
+
+    document.getElementById('lista-input').value = '';
     document.getElementById('lista-preview').style.display = 'none';
     listaParseada = [];
-    toast(criados > 0
-      ? `✓ ${adicionados} adicionados (${criados} novos cadastrados)`
-      : `✓ ${adicionados} produto(s) adicionados ao estoque`);
-  } catch (e) { erroToast(e); }
-  finally {
-    _confirmarListaEntrada = false; // ✓ Sempre libera o mutex
+
+    const msg = criados > 0
+      ? `✓ ${adicionados} adicionados (${criados} novos)`
+      : `✓ ${adicionados} unidades registradas`;
+
+    toast(msg + (erros.length > 0 ? ` (${erros.length} erros)` : ''), 'ac');
+
+    // ✅ Alertar erros se houver
+    if (erros.length > 0) {
+      console.warn('[Lista] Erros:', erros);
+      toast(`⚠️ ${erros.length} linha(s) com erro - veja console`, 'ye');
+    }
+
+    renderHistEntradas();
+  } catch (e) {
+    console.error('[Lista] Erro crítico:', e);
+    toast('❌ Erro ao processar lista: ' + e.message, 're');
+  } finally {
+    _confirmarListaEntrada = false;
   }
 }
 
