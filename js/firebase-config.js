@@ -38,13 +38,14 @@ enableIndexedDbPersistence(db).catch((err) => {
 // Inicializar Auth
 export const auth = getAuth(app);
 
-// Autenticar anonimamente
+// Autenticar anonimamente (sem bloquear o app)
 signInAnonymously(auth)
   .then(() => {
     console.log('[Firebase] ✓ Autenticado anonimamente');
   })
   .catch((error) => {
-    console.error('[Firebase] Erro ao autenticar:', error);
+    console.warn('[Firebase] Aviso ao autenticar:', error.message);
+    // Continua mesmo se autenticação falhar
   });
 
 console.log('[Firebase] ✓ Inicializado com sucesso!');

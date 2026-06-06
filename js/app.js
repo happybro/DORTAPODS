@@ -803,28 +803,43 @@ window.addEventListener('offline', () => toast('Sem conexão com internet', 're'
 async function init() {
   updateTime();
   setInterval(updateTime, 30000);
-  setLoading(true, 'Iniciando PodManager...');
+  setLoading(true, 'Iniciando DortaPods...');
 
   try {
-    setLoading(true, 'Verificando dados locais...');
-    const migrou = await migrarLocalStorage();
-    if (migrou) toast('✓ Dados migrados do localStorage para Supabase!');
+    // Timeout de segurança (30 segundos)
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout ao carregar dados')), 30000)
+    );
 
-    setLoading(true, 'Carregando produtos...');
-    await ProdAPI.carregarProdutos();
+    const loadPromise = (async () => {
+      try {
+        setLoading(true, 'Verificando dados locais...');
+        const migrou = await Promise.race([migrarLocalStorage(), timeoutPromise]);
+        if (migrou) toast('✓ Dados migrados!');
+      } catch (e) {
+        console.warn('[Init] Aviso migração:', e.message);
+        // Continua mesmo se migração falhar
+      }
 
-    setLoading(true, 'Carregando pedidos...');
-    await PedidosAPI.carregarPedidos();
+      setLoading(true, 'Carregando produtos...');
+      await Promise.race([ProdAPI.carregarProdutos(), timeoutPromise]);
 
-    setLoading(true, 'Carregando movimentações...');
-    await MovsAPI.carregarMovs();
-    await EntradasAPI.carregarEntradas();
+      setLoading(true, 'Carregando pedidos...');
+      await Promise.race([PedidosAPI.carregarPedidos(), timeoutPromise]);
 
+      setLoading(true, 'Carregando movimentações...');
+      await Promise.race([MovsAPI.carregarMovs(), timeoutPromise]);
+
+      setLoading(true, 'Carregando entradas...');
+      await Promise.race([EntradasAPI.carregarEntradas(), timeoutPromise]);
+    })();
+
+    await loadPromise;
   } catch (e) {
-    console.error('[PodManager] Falha no init:', e);
+    console.error('[Init] Erro:', e.message);
     setLoading(false);
-    toast('Erro ao conectar ao banco. Verifique config.js', 're');
-    return;
+    toast('⚠️ Erro ao conectar. Continuando offline...', 're');
+    // NÃO retorna - continua mesmo com erro
   }
 
   setLoading(false);
