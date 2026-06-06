@@ -1,0 +1,291 @@
+════════════════════════════════════════════════════════════════
+    ROTEIRO DE VENDA - DORTAPODS
+    Tempo: 15-20 minutos
+════════════════════════════════════════════════════════════════
+
+[MINUTO 1] ABERTURA E CONEXÃO
+════════════════════════════════════════════════════════════════
+Fale ASSIM:
+
+"Oi! Eu criei uma solução especialmente para negócios como o seu.
+Um app que vai resolver o maior problema de quem vende pods:
+não saber se tem estoque, não controlar o lucro, não organizar
+as vendas.
+
+Deixa eu te mostrar em 15 minutos algo que vai mudar seu negócio."
+
+[FAÇA ISSO ENQUANTO FALA]
+→ Abra: https://dortapods.vercel.app/ (já carregado)
+→ Coloque em tela cheia (F11)
+→ Use celular/tablet se possível (impacta mais!)
+
+
+[MINUTO 2-3] ENTENDA O PROBLEMA DELE
+════════════════════════════════════════════════════════════════
+Pergunte (deixe ele responder):
+
+1️⃣ "Como você controla o estoque hoje? Usa caderno? Memória?"
+   [ESCUTE]
+
+2️⃣ "Já perdeu uma venda porque não sabia se tinha estoque?"
+   [ESCUTE]
+
+3️⃣ "Como você sabe quanto lucrou em cada venda?"
+   [ESCUTE]
+
+4️⃣ "Consegue saber quanto vendeu no mês inteiro?"
+   [ESCUTE]
+
+⚠️ Use as respostas dele para conectar com a solução depois!
+
+
+[MINUTO 4] PRIMEIRO IMPACTO - MOSTRE O DASHBOARD
+════════════════════════════════════════════════════════════════
+Mostre a HOME (primeira tela) e FALE ASSIM:
+
+"Vê essa tela aqui? Em UM relance você vê:
+
+📦 Total de ESTOQUE: Quantas unidades tem pra vender hoje
+🛒 PEDIDOS: Quantos clientes estão esperando
+💰 FATURAMENTO: Quanto já vendeu
+💵 LUCRO: Quanto ganhou de verdade
+
+Simples, prático, sem ficção. Você vê a situação do seu negócio
+em 3 segundos. Sem planilha confusa, sem adivinhar."
+
+[DEIXE ISSO AIROSO - É O GANCHO]
+
+
+[MINUTO 5-6] MOSTRE COMO CRIAR PRODUTOS
+════════════════════════════════════════════════════════════════
+CLIQUE: Aba "PRODUTOS" (📦)
+
+Fale:
+
+"Primeiro, a gente cadastra seus produtos UMA ÚNICA VEZ.
+É rápido. Olha só:"
+
+[CLIQUE] "+ Novo"
+
+Preencha um produto de exemplo RÁPIDO:
+• Nome: V150 Pro
+• Sabor: Blue Dream
+• Compra: 15
+• Venda: 30
+
+[CLIQUE] "Salvar"
+
+Fale:
+
+"Pronto! Cadastrado. Agora toda vez que você for fazer um pedido,
+esse produto aparece aqui. Uma vez é suficiente!
+
+Você pode ter centenas de produtos. A gente gerencia isso tudo."
+
+
+[MINUTO 7-8] MOSTRE COMO REGISTRAR ESTOQUE
+════════════════════════════════════════════════════════════════
+CLIQUE: Aba "ENTRADA" (📥)
+
+Fale:
+
+"Quando chega mercadoria do fornecedor, você registra aqui.
+Tem dois jeitos:
+
+👉 MANUAL: Um a um, quando chega cada produto
+👉 LISTA: Colar uma lista inteira do seu fornecedor (super rápido!)
+
+Deixa eu demonstrar o MANUAL."
+
+[DEMONSTRE]
+1. Busque um produto
+2. Digite a quantidade (ex: 50)
+3. Clique "Confirmar entrada"
+
+Fale:
+
+"Prontinho! Vira estoque pro seu negócio. O app já sabe que você tem."
+
+
+[MINUTO 9-15] O GRANDE MOMENTO - CRIAR UM PEDIDO ⭐⭐⭐
+════════════════════════════════════════════════════════════════
+
+⚠️ ISSO É O CORAÇÃO DO APP. DEDIQUE MAIS TEMPO AQUI!
+
+CLIQUE: Aba "PEDIDO" (🛒)
+
+Fale COM ENTUSIASMO:
+
+"E agora vem a MÁGICA! Vou mostrar como é criar um pedido.
+
+Imagine seu cliente chegou e quer comprar pods.
+Vou criar um pedido de verdade COM VOCÊ ASSISTINDO.
+Você vai ver por que isso é revolucionário."
+
+[FAÇA ASSIM]
+
+PASSO 1: Digite nome
+"Digite o nome do cliente... vou colocar 'João da Tabacaria'"
+[TIPO RÁPIDO]
+
+Fale: "Pronto, cliente identificado"
+
+PASSO 2: Mostre os produtos
+"Agora vem o legal. Vê que apareceu uma lista de produtos?
+Cada um com um botão [+].
+
+Vou clicar no [+] do primeiro produto..."
+[CLIQUE [+] de um produto]
+
+Fale: "Viu? Apareceu 'x1' ali. Um produto adicionado!"
+
+PASSO 3: Adicione mais um
+"Vou clicar de novo..."
+[CLIQUE [+] de outro produto]
+
+Fale: "Olha! Agora apareceu 'x1' em outro também.
+Você pode clicar QUANTAS VEZES QUISER."
+
+[CLIQUE [+] do primeiro de novo]
+
+Fale: "Viu? Virou 'x2'! O app conta sozinho!
+
+Agora vem a MELHOR PARTE..."
+
+PASSO 4: Mostre total e lucro
+Scroll down no carrinho
+
+Fale APONTANDO NA TELA:
+
+"Olha aqui o TOTAL. Quanto esse pedido vai custar pro cliente.
+
+E aqui embaixo... OLHA SÓ...
+
+LUCRO: R$ 250,00
+
+Você SABE EXATAMENTE quanto vai lucrar nesse pedido!
+Ninguém nunca mais precisa contar nos dedos ou fazer contas
+de cabeça errada.
+
+Clique em 'Finalizar' e pronto, pedido SALVO.
+Estoque já ATUALIZADO automaticamente!"
+
+[CLIQUE "Finalizar"]
+
+Fale: "Pronto! Esse pedido entrou no sistema!
+
+Agora vem a prova real..."
+
+PASSO 5: Volte ao dashboard
+[CLIQUE botão DASHBOARD]
+
+Fale APONTANDO:
+
+"Vê aqui? O FATURAMENTO subiu!
+O LUCRO apareceu!
+O ESTOQUE diminuiu!
+
+TUDO AUTOMÁTICO! Você não faz nada além de clicar [+].
+A máquina faz o resto."
+
+[DEIXE ELE PROCESSAR ISSO POR ALGUNS SEGUNDOS]
+
+
+[MINUTO 16-17] MOSTRE O HISTÓRICO
+════════════════════════════════════════════════════════════════
+CLIQUE: Aba "VENDAS" (🧾)
+
+Fale:
+
+"Todos os pedidos que você fizer ficam aqui.
+Histórico completo de cada venda.
+
+Pode ver:
+- Quem comprou
+- Quando comprou
+- Quanto foi
+- Quanto lucrou
+
+Ou quer organizar a 'conversa' com o cliente?
+TEM UM BOTÃO DE WHATSAPP que gera a mensagem automática!"
+
+
+[MINUTO 18] ENCERRE COM FORÇA
+════════════════════════════════════════════════════════════════
+
+Fale:
+
+"Resumindo o que você viu:
+
+✅ Você cria seus produtos uma vez
+✅ Registra estoque quando chega
+✅ Cria pedidos em SEGUNDOS
+✅ Sabe o lucro de cada venda
+✅ Vê histórico completo
+✅ Tudo no seu smartphone
+✅ Funciona offline também
+✅ Dados sincronizam em vários celulares
+✅ GRÁTIS para sempre
+
+Isso é exatamente o que um negócio de pods precisa.
+
+Quer começar HOJE? Vou te registrar os produtos e você já
+começa a vender com esse app na sua mão."
+
+[PAUSE PARA RESPOSTA]
+
+
+[MINUTO 19-20] FECHE A VENDA
+════════════════════════════════════════════════════════════════
+
+Se o cliente disser SIM:
+→ "Perfeito! Vou criar seus produtos agora.
+   Quando terminar, você já começa a vender.
+   Qual é o primeiro produto que você tem?"
+
+Se o cliente disser "Deixa eu pensar":
+→ "Sem problema! Te deixo esse guia aqui (ENTREGUE GUIA RÁPIDO).
+   Se tiver qualquer dúvida, é só chamar no WhatsApp que
+   eu respondo em minutos.
+
+   [SEU NÚMERO]
+
+   Confia em mim, quando você colocar a mão no app,
+   vai amar. Custa zero reais!"
+
+Se o cliente disser "MAS QUANTO CUSTA?":
+→ "NADA! É totalmente gratuito. Hospedagem gratuita, sem taxa
+   de app, sem mensalidade. Você paga zero e usa para sempre.
+
+   Meu investimento é ver o seu negócio crescer. Quando você
+   vender mais com o app, você pensa em mim! 😉"
+
+
+════════════════════════════════════════════════════════════════
+DICAS DE OURO ENQUANTO APRESENTA
+════════════════════════════════════════════════════════════════
+
+🔥 ENERGIA: Fale com entusiasmo! Você criou algo BOM, acredita nisso!
+
+🎯 FOCO: O cliente quer saber "como me ajuda?", não "como funciona?".
+   Sempre conecte com o problema DELE.
+
+⏱️ RITMO: Fale devagar, deixe ele entender.
+   Não vire um auctioneer passando por tudo rápido.
+
+👉 MOSTRE, NÃO CONTE: Quando você cria um pedido ao vivo,
+   ele entende 10x melhor do que explicar.
+
+🎉 DESTAQUE O LUCRO: Quando aparecer o lucro calculado,
+   não passa batido. Diga:
+   "SABE QUANTO VOCÊ LUCRA? AGORA VOCÊ SABE!"
+
+💾 DEIXE TESTAR: No final, se possível, deixe ELE criar um pedido
+   enquanto você assiste. Faz toda diferença!
+
+📱 CELULAR > COMPUTADOR: Se conseguir, leve um tablet.
+   Impacta MUITO mais do que mostrar no notebook.
+
+════════════════════════════════════════════════════════════════
+BOA SORTE NA VENDA! 🚀
+════════════════════════════════════════════════════════════════

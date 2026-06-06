@@ -1,0 +1,87 @@
+╔════════════════════════════════════════════════════════════════╗
+║                    🚀 DORTAPODS - GUIA RÁPIDO                  ║
+║            Controle de Estoque e Vendas para Pods             ║
+╚════════════════════════════════════════════════════════════════╝
+
+┌─ 📱 COMO ACESSAR ─────────────────────────────────────────────┐
+│ Abra no navegador: https://dortapods.vercel.app/              │
+│ Funciona em qualquer celular, tablet ou computador            │
+└───────────────────────────────────────────────────────────────┘
+
+┌─ 📦 PASSO 1: ADICIONAR PRODUTOS ──────────────────────────────┐
+│ 1. Vá para aba "PRODUTOS" (📦)                                │
+│ 2. Clique em "+ Novo"                                         │
+│ 3. Preencha:                                                   │
+│    • Nome: V150 Pro                                           │
+│    • Sabor: Blue Dream                                        │
+│    • Preço Compra: R$ 15,00                                  │
+│    • Preço Venda: R$ 30,00                                   │
+│ 4. Clique em "Salvar"                                        │
+│ 5. Pronto! Produto criado uma única vez                      │
+└───────────────────────────────────────────────────────────────┘
+
+┌─ 📥 PASSO 2: REGISTRAR ESTOQUE ───────────────────────────────┐
+│ 1. Vá para aba "ENTRADA" (📥)                                │
+│ 2. Escolha: MANUAL (um a um) ou LISTA (colar vários)        │
+│ 3. Busque o produto e registre a quantidade                 │
+│ 4. Clique em "Confirmar entrada"                            │
+│ 5. Seu estoque atualiza AUTOMÁTICO!                         │
+└───────────────────────────────────────────────────────────────┘
+
+┌─ 🛒 PASSO 3: CRIAR PEDIDO (O MAIS RÁPIDO!) ───────────────────┐
+│ 1. Vá para aba "PEDIDO" (🛒)                                 │
+│ 2. Digite nome do cliente                                   │
+│ 3. Clique no botão [+] de cada produto para adicionar      │
+│ 4. Veja o TOTAL e o LUCRO atualizando em tempo real!       │
+│ 5. Clique em "✓ Finalizar"                                │
+│ 6. Pronto! Pedido salvo + Estoque atualizado automaticamente│
+└───────────────────────────────────────────────────────────────┘
+
+┌─ 🧾 PASSO 4: VER HISTÓRICO ──────────────────────────────────┐
+│ 1. Vá para aba "VENDAS" (🧾)                               │
+│ 2. Veja TODOS os pedidos já feitos                         │
+│ 3. Filtre por: Todos, Pendentes ou Finalizados             │
+│ 4. Tem um botão de WhatsApp que gera mensagem automática!  │
+└───────────────────────────────────────────────────────────────┘
+
+┌─ 📊 DASHBOARD (HOME) ─────────────────────────────────────────┐
+│ Quando abrir o app, vê na primeira tela:                    │
+│ • 📦 Total de estoque em unidades                           │
+│ • 🛒 Quantos pedidos estão pendentes                        │
+│ • 💰 Quanto você faturou (total de vendas)                 │
+│ • 💵 Quanto você lucrou (margem de lucro)                  │
+│ • 📈 Últimas movimentações do negócio                       │
+└───────────────────────────────────────────────────────────────┘
+
+┌─ ⭐ DESTAQUES ────────────────────────────────────────────────┐
+│ ✅ FÁCIL: Aprende em 5 minutos                              │
+│ ✅ RÁPIDO: Um pedido em menos de 1 minuto                  │
+│ ✅ AUTOMÁTICO: Calcula lucro sozinho                        │
+│ ✅ MOBILE: Funciona no seu smartphone                       │
+│ ✅ OFFLINE: Funciona sem internet                           │
+│ ✅ NUVEM: Dados sincronizam em vários celulares            │
+│ ✅ GRATUITO: Zero mensalidade para sempre!                 │
+└───────────────────────────────────────────────────────────────┘
+
+┌─ 💡 DICAS IMPORTANTES ────────────────────────────────────────┐
+│ 1. Quando cria um pedido, o estoque reduz AUTOMÁTICO        │
+│ 2. Se esquecer de registrar entrada, estoque fica negativo  │
+│    (só registre quando a mercadoria chegar mesmo)           │
+│ 3. Pode usar em 2+ celulares ao mesmo tempo               │
+│    (sincroniza automático!)                                 │
+│ 4. Não precisa de WiFi constante, funciona offline         │
+│ 5. Seus dados ficam na nuvem (nunca perde)                │
+└───────────────────────────────────────────────────────────────┘
+
+┌─ ❓ DÚVIDAS? ─────────────────────────────────────────────────┐
+│ Telegram: [SEU_TELEGRAM_AQUI]                               │
+│ WhatsApp: [SEU_WHATSAPP_AQUI]                               │
+│ Email:    [SEU_EMAIL_AQUI]                                  │
+│                                                             │
+│ Respondo em até 1 hora! 🚀                                 │
+└───────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════
+                      Pronto para aumentar as vendas?
+                    Comece AGORA: https://dortapods.vercel.app/
+═══════════════════════════════════════════════════════════════════
