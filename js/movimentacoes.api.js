@@ -29,8 +29,17 @@ export async function carregarMovs() {
     console.log('[MovAPI] ✓ Carregadas', state.movs.length, 'movimentações');
     return state.movs;
   } catch (error) {
-    console.error('[MovAPI] Erro ao carregar:', error);
-    throw error;
+    console.warn('[MovAPI] Erro ao carregar do Firebase:', error.message);
+    // Fallback: localStorage
+    try {
+      const saved = JSON.parse(localStorage.getItem('pm_movs') || '[]');
+      state.movs = saved.map(norm);
+      console.log('[MovAPI] ✓ Carregadas do localStorage:', state.movs.length);
+      return state.movs;
+    } catch (e) {
+      state.movs = [];
+      return [];
+    }
   }
 }
 

@@ -55,8 +55,17 @@ export async function carregarPedidos() {
     console.log('[PedAPI] ✓ Carregados', state.pedidos.length, 'pedidos');
     return state.pedidos;
   } catch (error) {
-    console.error('[PedAPI] Erro ao carregar:', error);
-    throw error;
+    console.warn('[PedAPI] Erro ao carregar do Firebase:', error.message);
+    // Fallback: localStorage
+    try {
+      const saved = JSON.parse(localStorage.getItem('pm_pedidos') || '[]');
+      state.pedidos = saved.map(normPedido);
+      console.log('[PedAPI] ✓ Carregados do localStorage:', state.pedidos.length);
+      return state.pedidos;
+    } catch (e) {
+      state.pedidos = [];
+      return [];
+    }
   }
 }
 

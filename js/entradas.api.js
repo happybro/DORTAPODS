@@ -34,8 +34,17 @@ export async function carregarEntradas() {
     console.log('[EntAPI] ✓ Carregadas', state.entradas.length, 'entradas');
     return state.entradas;
   } catch (error) {
-    console.error('[EntAPI] Erro ao carregar:', error);
-    throw error;
+    console.warn('[EntAPI] Erro ao carregar do Firebase:', error.message);
+    // Fallback: localStorage
+    try {
+      const saved = JSON.parse(localStorage.getItem('pm_entradas') || '[]');
+      state.entradas = saved.map(norm);
+      console.log('[EntAPI] ✓ Carregadas do localStorage:', state.entradas.length);
+      return state.entradas;
+    } catch (e) {
+      state.entradas = [];
+      return [];
+    }
   }
 }
 

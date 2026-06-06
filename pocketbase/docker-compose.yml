@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  pocketbase:
+    image: ghcr.io/pocketbase/pocketbase:latest
+    container_name: dortapods_pb
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./pb_data:/pb/pb_data
+    environment:
+      - POCKETBASE_ENCRYPTION_KEY=${POCKETBASE_ENCRYPTION_KEY:-}
+    command: serve --http=0.0.0.0:8090
+    restart: unless-stopped
+
+volumes:
+  pb_data:

@@ -32,8 +32,18 @@ export async function carregarProdutos() {
     console.log('[ProdAPI] ✓ Carregados', Object.keys(state.prods).length, 'produtos');
     return state.prods;
   } catch (error) {
-    console.error('[ProdAPI] Erro ao carregar:', error);
-    throw error;
+    console.warn('[ProdAPI] Erro ao carregar do Firebase:', error.message);
+    // Fallback: tentar localStorage
+    try {
+      const saved = JSON.parse(localStorage.getItem('pm_prods_backup') || '{}');
+      state.prods = saved;
+      console.log('[ProdAPI] ✓ Carregados do localStorage:', Object.keys(saved).length, 'produtos');
+      return state.prods;
+    } catch (e) {
+      console.error('[ProdAPI] Erro total:', e);
+      state.prods = {};
+      return {};
+    }
   }
 }
 

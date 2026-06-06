@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: dortapods-pocketbase
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    dockerfile: ./pocketbase/Dockerfile
+    envVars:
+      - key: POCKETBASE_ENCRYPTION_KEY
+        sync: false
