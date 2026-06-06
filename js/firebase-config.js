@@ -1,51 +1,41 @@
 // ══════════════════════════════════════════════════════════════════
-// CONFIGURAÇÃO FIREBASE - DORTAPODS
+// CONFIGURAÇÃO FIREBASE - DORTAPODS (Versão Simplificada)
 // ══════════════════════════════════════════════════════════════════
-// Banco de dados grátis, vitalício, sem limite de crédito de tempo
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getFirestore, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+let db = null;
+let auth = null;
 
-// Configuração do Firebase (pública, é seguro)
-// ⚠️ IMPORTANTE: Atualize com suas credenciais reais do Firebase!
-// Veja: FIREBASE-SETUP-RAPIDO.md para instruções (2 minutos)
-// Estas são credenciais de exemplo/teste
-const firebaseConfig = {
-  apiKey: "AIzaSyDkK6rxxsi1ik6aS9Qis-ruOaxtBIWmd74",
-  authDomain: "dortapods.firebaseapp.com",
-  projectId: "dortapods",
-  storageBucket: "dortapods.firebasestorage.app",
-  messagingSenderId: "268747810661",
-  appId: "1:268747810661:web:f2d074319ed48b0bd0638c"
-};
+// Carregar Firebase de forma não-bloqueante
+(async () => {
+  try {
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js");
+    const { getFirestore, enableIndexedDbPersistence } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
+    const { getAuth, signInAnonymously } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js");
 
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig);
+    const firebaseConfig = {
+      apiKey: "AIzaSyDkK6rxxsi1ik6aS9Qis-ruOaxtBIWmd74",
+      authDomain: "dortapods.firebaseapp.com",
+      projectId: "dortapods",
+      storageBucket: "dortapods.firebasestorage.app",
+      messagingSenderId: "268747810661",
+      appId: "1:268747810661:web:f2d074319ed48b0bd0638c"
+    };
 
-// Inicializar Firestore
-export const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
 
-// Habilitar persistência offline
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.log('[Firebase] Múltiplas abas abertas');
-  } else if (err.code === 'unimplemented') {
-    console.log('[Firebase] Browser não suporta persistência');
+    // Habilitar persistência offline
+    enableIndexedDbPersistence(db).catch(() => {});
+
+    // Autenticar (em background, não bloqueia)
+    signInAnonymously(auth).catch(() => {});
+
+    console.log('[Firebase] ✓ Carregado com sucesso!');
+  } catch (error) {
+    console.warn('[Firebase] Erro ao carregar:', error.message);
   }
-});
+})();
 
-// Inicializar Auth
-export const auth = getAuth(app);
-
-// Autenticar anonimamente (sem bloquear o app)
-signInAnonymously(auth)
-  .then(() => {
-    console.log('[Firebase] ✓ Autenticado anonimamente');
-  })
-  .catch((error) => {
-    console.warn('[Firebase] Aviso ao autenticar:', error.message);
-    // Continua mesmo se autenticação falhar
-  });
-
-console.log('[Firebase] ✓ Inicializado com sucesso!');
+// Exportar (podem estar undefined no início)
+export { db, auth };
