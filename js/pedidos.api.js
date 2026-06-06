@@ -2,7 +2,7 @@
 // PEDIDOS API - FIREBASE
 // ══════════════════════════════════════════════════════════════════
 
-import { db } from './firebase-config.js';
+import { db, waitForFirebase } from './firebase-config.js';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, where } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 import { state } from './state.js';
 import { uid } from './utils.js';
@@ -44,6 +44,7 @@ function normPedido(p) {
 // ── carregar ─────────────────────────────────────────────────────
 export async function carregarPedidos() {
   try {
+    await waitForFirebase();
     const q = query(collection(db, 'pedidos'), orderBy('criado', 'desc'));
     const snapshot = await getDocs(q);
     state.pedidos = [];
@@ -67,6 +68,7 @@ export async function salvarPedido(pedAtual, novoStatus) {
   _salvandoPedido = true;
 
   try {
+    await waitForFirebase();
     const pedOriginal = state.pedidos.find(p => p.id === pedAtual.id) || null;
     const eraFinalizado = pedOriginal?.status === 'finalizado';
     const vaiFinalizar  = novoStatus === 'finalizado';

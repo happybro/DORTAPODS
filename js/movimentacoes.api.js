@@ -2,7 +2,7 @@
 // MOVIMENTAÇÕES API - FIREBASE
 // ══════════════════════════════════════════════════════════════════
 
-import { db } from './firebase-config.js';
+import { db, waitForFirebase } from './firebase-config.js';
 import { collection, addDoc, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 import { state } from './state.js';
 import { uid } from './utils.js';
@@ -19,6 +19,7 @@ function norm(m) {
 
 export async function carregarMovs() {
   try {
+    await waitForFirebase();
     const q = query(collection(db, 'movimentacoes'), orderBy('criado', 'desc'), limit(100));
     const snapshot = await getDocs(q);
     state.movs = [];
@@ -35,6 +36,7 @@ export async function carregarMovs() {
 
 export async function registrarMov({ tipo, desc, val }) {
   try {
+    await waitForFirebase();
     const docRef = await addDoc(collection(db, 'movimentacoes'), {
       tipo:       tipo,
       descricao:  desc,

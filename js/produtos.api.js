@@ -2,8 +2,8 @@
 // PRODUTOS API - FIREBASE
 // ══════════════════════════════════════════════════════════════════
 
-import { db } from './firebase-config.js';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, increment } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+import { db, waitForFirebase } from './firebase-config.js';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 import { state } from './state.js';
 import { uid, sanitize } from './utils.js';
 
@@ -22,6 +22,7 @@ function norm(p) {
 
 export async function carregarProdutos() {
   try {
+    await waitForFirebase();
     const q = query(collection(db, 'produtos'), orderBy('nome'), orderBy('sabor'));
     const snapshot = await getDocs(q);
     state.prods = {};
@@ -38,6 +39,7 @@ export async function carregarProdutos() {
 
 export async function salvarProduto({ id, nome, sabor, compra, venda }) {
   try {
+    await waitForFirebase();
     const isNovo = !id || !state.prods[id];
     const prodId = isNovo ? uid() : id;
 
@@ -72,6 +74,7 @@ export async function salvarProduto({ id, nome, sabor, compra, venda }) {
 
 export async function excluirProduto(id) {
   try {
+    await waitForFirebase();
     await deleteDoc(doc(db, 'produtos', id));
     delete state.prods[id];
     console.log('[ProdAPI] ✓ Produto deletado:', id);

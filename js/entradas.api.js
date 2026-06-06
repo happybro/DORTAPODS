@@ -2,7 +2,7 @@
 // ENTRADAS API - FIREBASE
 // ══════════════════════════════════════════════════════════════════
 
-import { db } from './firebase-config.js';
+import { db, waitForFirebase } from './firebase-config.js';
 import { collection, addDoc, getDocs, doc, deleteDoc, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 import { state } from './state.js';
 import { uid } from './utils.js';
@@ -24,6 +24,7 @@ function norm(e) {
 
 export async function carregarEntradas() {
   try {
+    await waitForFirebase();
     const q = query(collection(db, 'entradas'), orderBy('criado', 'desc'), limit(150));
     const snapshot = await getDocs(q);
     state.entradas = [];
@@ -46,6 +47,7 @@ export async function registrarEntrada({ prodId, nome, qtd, custo }) {
   _registrandoEntrada = true;
 
   try {
+    await waitForFirebase();
     // ✓ PROTEÇÃO 2: Validação upfront (produto existe)
     const prod = state.prods[prodId];
     if (!prod) throw new Error(`Produto não encontrado: ${nome}`);

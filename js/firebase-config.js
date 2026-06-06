@@ -1,11 +1,31 @@
 // ══════════════════════════════════════════════════════════════════
-// CONFIGURAÇÃO FIREBASE - DORTAPODS (Versão Simplificada)
+// CONFIGURAÇÃO FIREBASE - DORTAPODS
 // ══════════════════════════════════════════════════════════════════
 
 let db = null;
 let auth = null;
+let firebaseReady = false;
+const waiters = [];
 
-// Carregar Firebase de forma não-bloqueante
+// Notificar quando Firebase estiver pronto
+function notifyReady() {
+  firebaseReady = true;
+  waiters.forEach(fn => fn());
+  waiters.length = 0;
+}
+
+// Esperar Firebase estar pronto
+export function waitForFirebase() {
+  return new Promise(resolve => {
+    if (firebaseReady) {
+      resolve();
+    } else {
+      waiters.push(resolve);
+    }
+  });
+}
+
+// Carregar Firebase de forma rápida e confiável
 (async () => {
   try {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js");
@@ -25,17 +45,20 @@ let auth = null;
     db = getFirestore(app);
     auth = getAuth(app);
 
-    // Habilitar persistência offline
+    // Habilitar persistência offline (non-blocking)
     enableIndexedDbPersistence(db).catch(() => {});
 
-    // Autenticar (em background, não bloqueia)
+    // Autenticar
     signInAnonymously(auth).catch(() => {});
 
-    console.log('[Firebase] ✓ Carregado com sucesso!');
+    console.log('[Firebase] ✓ Inicializado com sucesso!');
+    notifyReady();
   } catch (error) {
-    console.warn('[Firebase] Erro ao carregar:', error.message);
+    console.error('[Firebase] Erro crítico:', error);
+    // Ainda assim marcar como pronto para o app não travar
+    setTimeout(notifyReady, 1000);
   }
 })();
 
-// Exportar (podem estar undefined no início)
+// Exportar
 export { db, auth };
