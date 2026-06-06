@@ -12,12 +12,12 @@ import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/1
 // Veja: FIREBASE-SETUP-RAPIDO.md para instruções (2 minutos)
 // Estas são credenciais de exemplo/teste
 const firebaseConfig = {
-  apiKey: "AIzaSyDxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  authDomain: "dortapods-sandbox.firebaseapp.com",
-  projectId: "dortapods-sandbox",
-  storageBucket: "dortapods-sandbox.appspot.com",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abcdef1234567890abcd"
+  apiKey: "AIzaSyDkK6rxxsi1ik6aS9Qis-ruOaxtBIWmd74",
+  authDomain: "dortapods.firebaseapp.com",
+  projectId: "dortapods",
+  storageBucket: "dortapods.firebasestorage.app",
+  messagingSenderId: "268747810661",
+  appId: "1:268747810661:web:f2d074319ed48b0bd0638c"
 };
 
 // Inicializar Firebase
