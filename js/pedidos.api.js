@@ -1,4 +1,9 @@
-import { sb } from './supabase.js';
+// ══════════════════════════════════════════════════════════════════
+// PEDIDOS API - FIREBASE
+// ══════════════════════════════════════════════════════════════════
+
+import { db } from './firebase-config.js';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, where } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 import { state } from './state.js';
 import { uid } from './utils.js';
 import { atualizarEstoque } from './produtos.api.js';
@@ -25,20 +30,33 @@ function normPedido(p) {
     status:  p.status,
     total:   parseFloat(p.total)  || 0,
     lucro:   parseFloat(p.lucro)  || 0,
-    ts:      new Date(p.criado_em).getTime(),
-    itens:   (p.pedido_itens || []).map(normItem),
+    ts:      p.criado ? new Date(p.criado.toDate()).getTime() : Date.now(),
+    itens:   (p.itens || []).map(i => ({
+      prodId: i.prodId,
+      nome:   i.nome,
+      sabor:  i.sabor,
+      qtd:    parseInt(i.qtd),
+      venda:  parseFloat(i.venda),
+    })),
   };
 }
 
 // ── carregar ─────────────────────────────────────────────────────
 export async function carregarPedidos() {
-  const { data, error } = await sb
-    .from('pedidos')
-    .select('*, pedido_itens(*)')
-    .order('criado_em', { ascending: false });
-  if (error) throw error;
-  state.pedidos = data.map(normPedido);
-  return state.pedidos;
+  try {
+    const q = query(collection(db, 'pedidos'), orderBy('criado', 'desc'));
+    const snapshot = await getDocs(q);
+    state.pedidos = [];
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      state.pedidos.push(normPedido({ id: docSnap.id, ...data }));
+    });
+    console.log('[PedAPI] ✓ Carregados', state.pedidos.length, 'pedidos');
+    return state.pedidos;
+  } catch (error) {
+    console.error('[PedAPI] Erro ao carregar:', error);
+    throw error;
+  }
 }
 
 // ── salvar (novo ou editar) ───────────────────────────────────────
@@ -105,41 +123,34 @@ export async function salvarPedido(pedAtual, novoStatus) {
       throw estErr;
     }
 
-    // 5. Upsert pedido (atômico)
-    const { data: pedRow, error: pedErr } = await sb.from('pedidos').upsert({
-      id:       pedAtual.id,
-      cliente:  pedAtual.cliente,
-      obs:      pedAtual.obs || null,
-      status:   novoStatus,
-      total:    pedAtual.total,
-      lucro:    pedAtual.lucro,
-      ...(pedOriginal ? {} : { criado_em: new Date().toISOString() }),
-    }).select().single();
-    if (pedErr) throw pedErr;
+    // 5. Upsert pedido (atômico) - Firebase
+    const pedDocRef = doc(db, 'pedidos', pedAtual.id);
+    const pedData = {
+      cliente:   pedAtual.cliente,
+      obs:       pedAtual.obs || '',
+      status:    novoStatus,
+      total:     pedAtual.total,
+      lucro:     pedAtual.lucro,
+      itens:     pedAtual.itens,
+      ...(pedOriginal ? { atualizado: new Date() } : { criado: new Date() }),
+    };
 
-    // 6. Deletar e inserir itens (substituição atômica)
-    const { error: delErr } = await sb.from('pedido_itens').delete().eq('pedido_id', pedAtual.id);
-    if (delErr) throw delErr;
-
-    if (pedAtual.itens.length) {
-      const rows = pedAtual.itens.map(item => ({
-        id:        uid(),
-        pedido_id: pedAtual.id,
-        prod_id:   item.prodId,
-        nome:      item.nome,
-        sabor:     item.sabor,
-        qtd:       item.qtd,
-        venda:     item.venda,
-      }));
-      const { error: itErr } = await sb.from('pedido_itens').insert(rows);
-      if (itErr) throw itErr;
+    if (pedOriginal) {
+      await updateDoc(pedDocRef, pedData);
+    } else {
+      await addDoc(collection(db, 'pedidos'), {
+        ...pedData,
+        id: pedAtual.id
+      });
     }
 
-    // 7. Atualizar cache (NUNCA confiar apenas no cache após operação crítica)
-    const pedSalvo = { ...normPedido(pedRow), itens: pedAtual.itens };
+    // 6. Atualizar cache
+    const pedSalvo = { ...pedAtual, status: novoStatus };
     const idx = state.pedidos.findIndex(p => p.id === pedAtual.id);
     if (idx >= 0) state.pedidos[idx] = pedSalvo;
     else state.pedidos.unshift(pedSalvo);
+
+    console.log('[PedAPI] ✓ Pedido salvo:', pedAtual.id);
 
     return pedSalvo;
   } finally {
@@ -163,11 +174,10 @@ export async function cancelarPedido(pedId) {
     }
 
     // Atualizar status
-    const { error } = await sb
-      .from('pedidos')
-      .update({ status: 'pendente' })
-      .eq('id', pedId);
-    if (error) throw error;
+    await updateDoc(doc(db, 'pedidos', pedId), {
+      status: 'pendente',
+      atualizado: new Date()
+    });
 
     // Atualizar cache
     const idx = state.pedidos.findIndex(p => p.id === pedId);

@@ -1,4 +1,9 @@
-import { sb } from './supabase.js';
+// ══════════════════════════════════════════════════════════════════
+// ENTRADAS API - FIREBASE
+// ══════════════════════════════════════════════════════════════════
+
+import { db } from './firebase-config.js';
+import { collection, addDoc, getDocs, doc, deleteDoc, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 import { state } from './state.js';
 import { uid } from './utils.js';
 import { atualizarEstoque } from './produtos.api.js';
@@ -9,23 +14,28 @@ let _registrandoEntrada = false;
 function norm(e) {
   return {
     id:     e.id,
-    prodId: e.prod_id,
+    prodId: e.prodId,
     nome:   e.nome,
     qtd:    parseInt(e.qtd),
-    custo:  parseFloat(e.custo) || 0,
-    ts:     new Date(e.criado_em).getTime(),
+    custo:  parseFloat(e.valor_compra) || 0,
+    ts:     e.criado ? new Date(e.criado.toDate()).getTime() : Date.now(),
   };
 }
 
 export async function carregarEntradas() {
-  const { data, error } = await sb
-    .from('entradas')
-    .select('*')
-    .order('criado_em', { ascending: false })
-    .limit(150);
-  if (error) throw error;
-  state.entradas = data.map(norm);
-  return state.entradas;
+  try {
+    const q = query(collection(db, 'entradas'), orderBy('criado', 'desc'), limit(150));
+    const snapshot = await getDocs(q);
+    state.entradas = [];
+    snapshot.forEach(docSnap => {
+      state.entradas.push(norm({ id: docSnap.id, ...docSnap.data() }));
+    });
+    console.log('[EntAPI] ✓ Carregadas', state.entradas.length, 'entradas');
+    return state.entradas;
+  } catch (error) {
+    console.error('[EntAPI] Erro ao carregar:', error);
+    throw error;
+  }
 }
 
 // ── registrar entrada (novo estoque) ────────────────────────────────
@@ -48,23 +58,23 @@ export async function registrarEntrada({ prodId, nome, qtd, custo }) {
     const entradaId = uid();
 
     // 1. Inserir entrada (registro de compra)
-    const { data: entradaRow, error: entErr } = await sb.from('entradas').insert({
-      id:        entradaId,
-      prod_id:   prodId,
-      nome,
-      qtd:       qtdInt,
-      custo:     parseFloat(custo) || 0,
-      criado_em: new Date().toISOString(),
-    }).select().single();
-    if (entErr) throw entErr;
+    const entradaDocRef = await addDoc(collection(db, 'entradas'), {
+      prodId:       prodId,
+      nome:         nome,
+      qtd:          qtdInt,
+      valor_compra: parseFloat(custo) || 0,
+      criado:       new Date()
+    });
 
-    // 2. Atualizar estoque (usa RPC atômica, já tem proteção no banco)
+    const entradaRow = { id: entradaDocRef.id, prodId, nome, qtd: qtdInt, valor_compra: parseFloat(custo) || 0 };
+
+    // 2. Atualizar estoque (com proteção no codigo)
     try {
       await atualizarEstoque(prodId, qtdInt);
     } catch (estoqueErr) {
       // ✓ PROTEÇÃO 4: Se estoque falhar, deletar a entrada registrada
       try {
-        await sb.from('entradas').delete().eq('id', entradaId);
+        await deleteDoc(doc(db, 'entradas', entradaDocRef.id));
       } catch (delErr) {
         console.error('ERRO CRÍTICO ao reverter entrada:', delErr);
         throw new Error('Falha ao processar entrada. Contate suporte.');
@@ -73,10 +83,28 @@ export async function registrarEntrada({ prodId, nome, qtd, custo }) {
     }
 
     // 3. Atualizar cache
-    state.entradas.unshift(norm(entradaRow));
+    const novaEntrada = norm(entradaRow);
+    state.entradas.unshift(novaEntrada);
     if (state.entradas.length > 150) state.entradas.length = 150;
+    console.log('[EntAPI] ✓ Entrada registrada:', entradaDocRef.id);
     return state.entradas[0];
   } finally {
     _registrandoEntrada = false; // ✓ Sempre libera o mutex
+  }
+}
+
+export async function carregarEntradas() {
+  try {
+    const q = query(collection(db, 'entradas'), orderBy('criado', 'desc'), limit(150));
+    const snapshot = await getDocs(q);
+    state.entradas = [];
+    snapshot.forEach(docSnap => {
+      state.entradas.push(norm({ id: docSnap.id, ...docSnap.data() }));
+    });
+    console.log('[EntAPI] ✓ Carregadas', state.entradas.length, 'entradas');
+    return state.entradas;
+  } catch (error) {
+    console.error('[EntAPI] Erro ao carregar:', error);
+    throw error;
   }
 }

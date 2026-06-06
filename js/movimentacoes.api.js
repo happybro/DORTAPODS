@@ -1,4 +1,9 @@
-import { sb } from './supabase.js';
+// ══════════════════════════════════════════════════════════════════
+// MOVIMENTAÇÕES API - FIREBASE
+// ══════════════════════════════════════════════════════════════════
+
+import { db } from './firebase-config.js';
+import { collection, addDoc, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 import { state } from './state.js';
 import { uid } from './utils.js';
 
@@ -8,31 +13,42 @@ function norm(m) {
     tipo: m.tipo,
     desc: m.descricao,
     val:  m.valor || '',
-    ts:   new Date(m.criado_em).getTime(),
+    ts:   m.criado ? new Date(m.criado.toDate()).getTime() : Date.now(),
   };
 }
 
 export async function carregarMovs() {
-  const { data, error } = await sb
-    .from('movimentacoes')
-    .select('*')
-    .order('criado_em', { ascending: false })
-    .limit(100);
-  if (error) throw error;
-  state.movs = data.map(norm);
-  return state.movs;
+  try {
+    const q = query(collection(db, 'movimentacoes'), orderBy('criado', 'desc'), limit(100));
+    const snapshot = await getDocs(q);
+    state.movs = [];
+    snapshot.forEach(docSnap => {
+      state.movs.push(norm({ id: docSnap.id, ...docSnap.data() }));
+    });
+    console.log('[MovAPI] ✓ Carregadas', state.movs.length, 'movimentações');
+    return state.movs;
+  } catch (error) {
+    console.error('[MovAPI] Erro ao carregar:', error);
+    throw error;
+  }
 }
 
 export async function registrarMov({ tipo, desc, val }) {
-  const { data, error } = await sb.from('movimentacoes').insert({
-    id:        uid(),
-    tipo,
-    descricao: desc,
-    valor:     val || null,
-    criado_em: new Date().toISOString(),
-  }).select().single();
-  if (error) throw error;
-  state.movs.unshift(norm(data));
-  if (state.movs.length > 100) state.movs.length = 100;
-  return state.movs[0];
+  try {
+    const docRef = await addDoc(collection(db, 'movimentacoes'), {
+      tipo:       tipo,
+      descricao:  desc,
+      valor:      val || null,
+      criado:     new Date()
+    });
+
+    const mov = norm({ id: docRef.id, tipo, descricao: desc, valor: val });
+    state.movs.unshift(mov);
+    if (state.movs.length > 100) state.movs.length = 100;
+    console.log('[MovAPI] ✓ Movimentação registrada:', docRef.id);
+    return state.movs[0];
+  } catch (error) {
+    console.error('[MovAPI] Erro ao registrar:', error);
+    throw error;
+  }
 }

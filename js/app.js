@@ -1,3 +1,6 @@
+// Firebase (inicializa ao carregar)
+import './firebase-config.js';
+
 import { state }                              from './state.js';
 import { uid, R, fmtDt, toast, erroToast, sanitize } from './utils.js';
 import * as ProdAPI                           from './produtos.api.js';

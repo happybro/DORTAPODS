@@ -1,8 +1,13 @@
-import { sb } from './supabase.js';
+// ══════════════════════════════════════════════════════════════════
+// PRODUTOS API - FIREBASE
+// ══════════════════════════════════════════════════════════════════
+
+import { db } from './firebase-config.js';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, increment } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 import { state } from './state.js';
 import { uid, sanitize } from './utils.js';
 
-// ── normalização: row do banco → objeto usado no app ────────────
+// ── normalização: doc do banco → objeto usado no app ────────────
 function norm(p) {
   return {
     id:      p.id,
@@ -11,54 +16,98 @@ function norm(p) {
     compra:  parseFloat(p.compra)  || 0,
     venda:   parseFloat(p.venda)   || 0,
     estoque: parseInt(p.estoque)   || 0,
-    criado:  new Date(p.criado_em).getTime(),
+    criado:  p.criado ? new Date(p.criado.toDate()).getTime() : Date.now(),
   };
 }
 
 export async function carregarProdutos() {
-  const { data, error } = await sb
-    .from('produtos')
-    .select('*')
-    .order('nome')
-    .order('sabor');
-  if (error) throw error;
-  state.prods = {};
-  data.forEach(p => { state.prods[p.id] = norm(p); });
-  return state.prods;
+  try {
+    const q = query(collection(db, 'produtos'), orderBy('nome'), orderBy('sabor'));
+    const snapshot = await getDocs(q);
+    state.prods = {};
+    snapshot.forEach(docSnap => {
+      state.prods[docSnap.id] = norm({ id: docSnap.id, ...docSnap.data() });
+    });
+    console.log('[ProdAPI] ✓ Carregados', Object.keys(state.prods).length, 'produtos');
+    return state.prods;
+  } catch (error) {
+    console.error('[ProdAPI] Erro ao carregar:', error);
+    throw error;
+  }
 }
 
 export async function salvarProduto({ id, nome, sabor, compra, venda }) {
-  const isNovo = !id || !state.prods[id];
-  const prodId = isNovo ? uid() : id;
+  try {
+    const isNovo = !id || !state.prods[id];
+    const prodId = isNovo ? uid() : id;
 
-  const row = {
-    id:     prodId,
-    nome:   sanitize(nome),
-    sabor:  sanitize(sabor),
-    compra: parseFloat(compra) || 0,
-    venda:  parseFloat(venda)  || 0,
-    ...(isNovo && {
-      estoque:   0,
-      criado_em: new Date().toISOString(),
-    }),
-  };
+    const dados = {
+      nome:   sanitize(nome),
+      sabor:  sanitize(sabor),
+      compra: parseFloat(compra) || 0,
+      venda:  parseFloat(venda)  || 0,
+      ...(isNovo && {
+        estoque:   0,
+        criado: new Date(),
+      }),
+      atualizado: new Date()
+    };
 
-  const { data, error } = await sb.from('produtos').upsert(row).select().single();
-  if (error) throw error;
-  state.prods[data.id] = norm(data);
-  return state.prods[data.id];
+    if (isNovo) {
+      const docRef = await addDoc(collection(db, 'produtos'), dados);
+      state.prods[docRef.id] = norm({ id: docRef.id, ...dados });
+      console.log('[ProdAPI] ✓ Produto criado:', docRef.id);
+      return state.prods[docRef.id];
+    } else {
+      await updateDoc(doc(db, 'produtos', prodId), dados);
+      state.prods[prodId] = norm({ id: prodId, ...state.prods[prodId], ...dados });
+      console.log('[ProdAPI] ✓ Produto atualizado:', prodId);
+      return state.prods[prodId];
+    }
+  } catch (error) {
+    console.error('[ProdAPI] Erro ao salvar:', error);
+    throw error;
+  }
 }
 
 export async function excluirProduto(id) {
-  const { error } = await sb.from('produtos').delete().eq('id', id);
-  if (error) throw error;
-  delete state.prods[id];
+  try {
+    await deleteDoc(doc(db, 'produtos', id));
+    delete state.prods[id];
+    console.log('[ProdAPI] ✓ Produto deletado:', id);
+  } catch (error) {
+    console.error('[ProdAPI] Erro ao excluir:', error);
+    throw error;
+  }
 }
 
-// Usa RPC atômica para evitar estoque negativo via race condition
+// Atualizar estoque com proteção contra race conditions
 export async function atualizarEstoque(id, delta) {
-  const { data, error } = await sb.rpc('rpc_atualizar_estoque', { p_id: id, delta });
-  if (error) throw error;
-  state.prods[id] = norm(data);
-  return state.prods[id];
+  try {
+    const docRef = doc(db, 'produtos', id);
+
+    // Verificar estoque suficiente antes de atualizar
+    const currentProd = state.prods[id];
+    if (!currentProd) throw new Error('Produto não encontrado');
+
+    const novoEstoque = currentProd.estoque + delta;
+    if (novoEstoque < 0) {
+      throw new Error(`Estoque insuficiente. Disponível: ${currentProd.estoque}`);
+    }
+
+    // Atualizar estoque e data
+    await updateDoc(docRef, {
+      estoque: novoEstoque,
+      atualizado: new Date()
+    });
+
+    // Atualizar state local
+    state.prods[id].estoque = novoEstoque;
+    console.log(`[ProdAPI] ✓ Estoque atualizado: ${id} (${delta > 0 ? '+' : ''}${delta})`);
+
+    return state.prods[id];
+  } catch (error) {
+    console.error('[ProdAPI] Erro ao atualizar estoque:', error);
+    throw error;
+  }
 }
