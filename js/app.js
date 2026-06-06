@@ -919,7 +919,7 @@ async function init() {
   (async () => {
     try {
       await migrarLocalStorage().catch(() => {});
-      await ProdAPI.carregarProdutos().catch(() => {});
+      await ProdAPI.carregarProdutos();
       await PedidosAPI.carregarPedidos().catch(() => {});
       await MovsAPI.carregarMovs().catch(() => {});
       await EntradasAPI.carregarEntradas().catch(() => {});
@@ -928,7 +928,7 @@ async function init() {
       renderDash();
       console.log('[Init] ✓ Dados carregados');
     } catch (e) {
-      console.warn('[Init] Erro ao carregar:', e.message);
+      console.error('[Init] ERRO CRÍTICO:', e);
     }
   })();
 

@@ -36,15 +36,24 @@ function norm(p) {
 }
 
 export async function carregarProdutos() {
-  await waitForFirebase();
-  const q = query(collection(db, 'produtos'), orderBy('nome'), orderBy('sabor'));
-  const snapshot = await getDocs(q);
-  state.prods = {};
-  snapshot.forEach(docSnap => {
-    state.prods[docSnap.id] = norm({ id: docSnap.id, ...docSnap.data() });
-  });
-  console.log('[ProdAPI] ✓ Carregados', Object.keys(state.prods).length, 'produtos');
-  return state.prods;
+  try {
+    await waitForFirebase();
+    const q = query(collection(db, 'produtos'), orderBy('nome'), orderBy('sabor'));
+    const snapshot = await getDocs(q);
+    state.prods = {};
+    snapshot.forEach(docSnap => {
+      try {
+        state.prods[docSnap.id] = norm({ id: docSnap.id, ...docSnap.data() });
+      } catch (normErr) {
+        console.error('[ProdAPI] Erro ao normalizar:', docSnap.id, normErr);
+      }
+    });
+    console.log('[ProdAPI] ✓ Carregados', Object.keys(state.prods).length, 'produtos');
+    return state.prods;
+  } catch (error) {
+    console.error('[ProdAPI] ERRO ao carregar:', error);
+    throw error;
+  }
 }
 
 export async function salvarProduto({ id, nome, sabor, compra, venda }) {
