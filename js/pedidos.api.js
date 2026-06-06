@@ -43,30 +43,16 @@ function normPedido(p) {
 
 // ── carregar ─────────────────────────────────────────────────────
 export async function carregarPedidos() {
-  try {
-    await waitForFirebase();
-    const q = query(collection(db, 'pedidos'), orderBy('criado', 'desc'));
-    const snapshot = await getDocs(q);
-    state.pedidos = [];
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      state.pedidos.push(normPedido({ id: docSnap.id, ...data }));
-    });
-    console.log('[PedAPI] ✓ Carregados', state.pedidos.length, 'pedidos');
-    return state.pedidos;
-  } catch (error) {
-    console.warn('[PedAPI] Erro ao carregar do Firebase:', error.message);
-    // Fallback: localStorage
-    try {
-      const saved = JSON.parse(localStorage.getItem('pm_pedidos') || '[]');
-      state.pedidos = saved.map(normPedido);
-      console.log('[PedAPI] ✓ Carregados do localStorage:', state.pedidos.length);
-      return state.pedidos;
-    } catch (e) {
-      state.pedidos = [];
-      return [];
-    }
-  }
+  await waitForFirebase();
+  const q = query(collection(db, 'pedidos'), orderBy('criado', 'desc'));
+  const snapshot = await getDocs(q);
+  state.pedidos = [];
+  snapshot.forEach(docSnap => {
+    const data = docSnap.data();
+    state.pedidos.push(normPedido({ id: docSnap.id, ...data }));
+  });
+  console.log('[PedAPI] ✓ Carregados', state.pedidos.length, 'pedidos');
+  return state.pedidos;
 }
 
 // ── salvar (novo ou editar) ───────────────────────────────────────

@@ -18,29 +18,15 @@ function norm(m) {
 }
 
 export async function carregarMovs() {
-  try {
-    await waitForFirebase();
-    const q = query(collection(db, 'movimentacoes'), orderBy('criado', 'desc'), limit(100));
-    const snapshot = await getDocs(q);
-    state.movs = [];
-    snapshot.forEach(docSnap => {
-      state.movs.push(norm({ id: docSnap.id, ...docSnap.data() }));
-    });
-    console.log('[MovAPI] ✓ Carregadas', state.movs.length, 'movimentações');
-    return state.movs;
-  } catch (error) {
-    console.warn('[MovAPI] Erro ao carregar do Firebase:', error.message);
-    // Fallback: localStorage
-    try {
-      const saved = JSON.parse(localStorage.getItem('pm_movs') || '[]');
-      state.movs = saved.map(norm);
-      console.log('[MovAPI] ✓ Carregadas do localStorage:', state.movs.length);
-      return state.movs;
-    } catch (e) {
-      state.movs = [];
-      return [];
-    }
-  }
+  await waitForFirebase();
+  const q = query(collection(db, 'movimentacoes'), orderBy('criado', 'desc'), limit(100));
+  const snapshot = await getDocs(q);
+  state.movs = [];
+  snapshot.forEach(docSnap => {
+    state.movs.push(norm({ id: docSnap.id, ...docSnap.data() }));
+  });
+  console.log('[MovAPI] ✓ Carregadas', state.movs.length, 'movimentações');
+  return state.movs;
 }
 
 export async function registrarMov({ tipo, desc, val }) {

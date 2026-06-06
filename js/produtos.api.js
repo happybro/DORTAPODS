@@ -21,30 +21,15 @@ function norm(p) {
 }
 
 export async function carregarProdutos() {
-  try {
-    await waitForFirebase();
-    const q = query(collection(db, 'produtos'), orderBy('nome'), orderBy('sabor'));
-    const snapshot = await getDocs(q);
-    state.prods = {};
-    snapshot.forEach(docSnap => {
-      state.prods[docSnap.id] = norm({ id: docSnap.id, ...docSnap.data() });
-    });
-    console.log('[ProdAPI] ✓ Carregados', Object.keys(state.prods).length, 'produtos');
-    return state.prods;
-  } catch (error) {
-    console.warn('[ProdAPI] Erro ao carregar do Firebase:', error.message);
-    // Fallback: tentar localStorage
-    try {
-      const saved = JSON.parse(localStorage.getItem('pm_prods_backup') || '{}');
-      state.prods = saved;
-      console.log('[ProdAPI] ✓ Carregados do localStorage:', Object.keys(saved).length, 'produtos');
-      return state.prods;
-    } catch (e) {
-      console.error('[ProdAPI] Erro total:', e);
-      state.prods = {};
-      return {};
-    }
-  }
+  await waitForFirebase();
+  const q = query(collection(db, 'produtos'), orderBy('nome'), orderBy('sabor'));
+  const snapshot = await getDocs(q);
+  state.prods = {};
+  snapshot.forEach(docSnap => {
+    state.prods[docSnap.id] = norm({ id: docSnap.id, ...docSnap.data() });
+  });
+  console.log('[ProdAPI] ✓ Carregados', Object.keys(state.prods).length, 'produtos');
+  return state.prods;
 }
 
 export async function salvarProduto({ id, nome, sabor, compra, venda }) {
