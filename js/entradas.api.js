@@ -92,19 +92,3 @@ export async function registrarEntrada({ prodId, nome, qtd, custo }) {
     _registrandoEntrada = false; // ✓ Sempre libera o mutex
   }
 }
-
-export async function carregarEntradas() {
-  try {
-    const q = query(collection(db, 'entradas'), orderBy('criado', 'desc'), limit(150));
-    const snapshot = await getDocs(q);
-    state.entradas = [];
-    snapshot.forEach(docSnap => {
-      state.entradas.push(norm({ id: docSnap.id, ...docSnap.data() }));
-    });
-    console.log('[EntAPI] ✓ Carregadas', state.entradas.length, 'entradas');
-    return state.entradas;
-  } catch (error) {
-    console.error('[EntAPI] Erro ao carregar:', error);
-    throw error;
-  }
-}
