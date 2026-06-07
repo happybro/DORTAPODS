@@ -3,7 +3,7 @@
 // ══════════════════════════════════════════════════════════════════
 
 import { db, waitForFirebase } from './firebase-config.js';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 import { state } from './state.js';
 import { uid, sanitize } from './utils.js';
 
@@ -45,16 +45,21 @@ function norm(p) {
 export async function carregarProdutos() {
   try {
     await waitForFirebase();
-    const q = query(collection(db, 'produtos'), orderBy('nome'), orderBy('sabor'));
-    const snapshot = await getDocs(q);
-    state.prods = {};
+    // Sem orderBy composto = sem necessidade de índice no Firestore
+    const snapshot = await getDocs(collection(db, 'produtos'));
+    const lista = [];
     snapshot.forEach(docSnap => {
       try {
-        state.prods[docSnap.id] = norm({ id: docSnap.id, ...docSnap.data() });
+        const p = norm({ id: docSnap.id, ...docSnap.data() });
+        if (p) lista.push(p);
       } catch (normErr) {
         console.error('[ProdAPI] Erro ao normalizar:', docSnap.id, normErr);
       }
     });
+    // Ordenar no JS (sem índice composto necessário)
+    lista.sort((a, b) => a.nome.localeCompare(b.nome) || a.sabor.localeCompare(b.sabor));
+    state.prods = {};
+    lista.forEach(p => { state.prods[p.id] = p; });
     console.log('[ProdAPI] ✓ Carregados', Object.keys(state.prods).length, 'produtos');
     return state.prods;
   } catch (error) {
