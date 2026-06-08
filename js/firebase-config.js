@@ -30,7 +30,6 @@ export function waitForFirebase() {
   try {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js");
     const { getFirestore, enableIndexedDbPersistence } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
-    const { getAuth, signInAnonymously } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js");
 
     const firebaseConfig = {
       apiKey: "AIzaSyDkK6rxxsi1ik6aS9Qis-ruOaxtBIWmd74",
@@ -43,13 +42,9 @@ export function waitForFirebase() {
 
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
-    auth = getAuth(app);
 
     // Habilitar persistência offline (non-blocking)
     enableIndexedDbPersistence(db).catch(() => {});
-
-    // Autenticar
-    signInAnonymously(auth).catch(() => {});
 
     console.log('[Firebase] ✓ Inicializado com sucesso!');
     notifyReady();
