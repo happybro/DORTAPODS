@@ -137,6 +137,7 @@ function renderProds() {
         <div class="price-tag"><span>Margem</span>${margem}%</div>
       </div>
       <div class="prod-actions">
+        <button class="btn btn-ac btn-xs" style="flex:1" onclick="entradaRapida('${p.id}')">+ Estoque</button>
         <button class="btn btn-ghost btn-xs" onclick="editarProd('${p.id}')">✏️ Editar</button>
         <button class="btn btn-re btn-xs" onclick="excluirProd('${p.id}')">Excluir</button>
       </div>
@@ -197,6 +198,57 @@ async function excluirProd(id) {
       toast('Produto removido', 'ye');
     } catch (e) { erroToast(e); }
   });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ENTRADA RÁPIDA (botão + na aba Produtos)
+// ══════════════════════════════════════════════════════════════════
+let _entradaRapida = false;
+
+function entradaRapida(id) {
+  const p = state.prods[id];
+  if (!p) { toast('Produto não encontrado', 're'); return; }
+  document.getElementById('er-prod-id').value = id;
+  document.getElementById('er-prod-nome').textContent =
+    `${p.nome} ${p.sabor} · estoque atual: ${p.estoque} un.`;
+  document.getElementById('er-qtd').value = '';
+  document.getElementById('modal-entrada-rapida').classList.add('on');
+  setTimeout(() => document.getElementById('er-qtd').focus(), 300);
+}
+
+function erAddQtd(n) {
+  const el = document.getElementById('er-qtd');
+  el.value = Math.max(0, (parseInt(el.value) || 0) + n);
+}
+
+async function confirmarEntradaRapida() {
+  if (_entradaRapida) { toast('Processando... aguarde', 'ye'); return; }
+
+  const id  = document.getElementById('er-prod-id').value;
+  const qtd = parseInt(document.getElementById('er-qtd').value) || 0;
+  const p   = state.prods[id];
+
+  if (!p) { toast('Produto não encontrado', 're'); return; }
+  if (qtd <= 0) { toast('Informe uma quantidade válida', 're'); return; }
+
+  _entradaRapida = true;
+  try {
+    await EntradasAPI.registrarEntrada({ prodId: id, nome: p.nome + ' ' + p.sabor, qtd, custo: p.compra });
+    await MovsAPI.registrarMov({
+      tipo: 'entrada',
+      desc: `+${qtd}x ${p.nome} ${p.sabor}`,
+      val:  `+${qtd} un.`
+    }).catch(() => {});
+
+    fecharModal('modal-entrada-rapida');
+    toast(`✓ +${qtd} un. de ${p.nome} ${p.sabor}`, 'ac');
+    renderProds();
+    renderDash();
+  } catch (e) {
+    erroToast(e);
+  } finally {
+    _entradaRapida = false;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -315,6 +367,13 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         processarLista();
       }
+    });
+  }
+  // Enter confirma entrada rápida
+  const erQtd = document.getElementById('er-qtd');
+  if (erQtd) {
+    erQtd.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); confirmarEntradaRapida(); }
     });
   }
 }, { once: true });
@@ -866,6 +925,15 @@ function abrirModalWA(title, sub, txt) {
   document.getElementById('modal-wa').classList.add('on');
 }
 
+function enviarWA() {
+  const txt = document.getElementById('wa-text').textContent;
+  if (!txt) { toast('Nada para enviar', 're'); return; }
+  // wa.me abre o WhatsApp (app no celular ou WhatsApp Web no PC) com o texto pronto
+  const url = 'https://wa.me/?text=' + encodeURIComponent(txt);
+  window.open(url, '_blank');
+  toast('Abrindo WhatsApp...', 'wa');
+}
+
 function copiarWA() {
   const txt      = document.getElementById('wa-text').textContent;
   const fallback = t => {
@@ -900,6 +968,63 @@ function fecharOverlay(e, id)   { if (e.target === document.getElementById(id)) 
 // ══════════════════════════════════════════════════════════════════
 window.addEventListener('online',  () => toast('✓ Conexão restaurada', 'ac'));
 window.addEventListener('offline', () => toast('Sem conexão com internet', 're'));
+
+// ══════════════════════════════════════════════════════════════════
+// PIN DE ACESSO
+// ══════════════════════════════════════════════════════════════════
+const APP_PIN = '5544';
+let pinBuffer = '';
+
+function estaAutenticado() {
+  return sessionStorage.getItem('dortapods_auth') === '1';
+}
+
+function renderPinDots() {
+  document.querySelectorAll('#pin-dots .pin-dot').forEach((d, i) => {
+    d.classList.toggle('filled', i < pinBuffer.length);
+  });
+}
+
+function pinPress(n) {
+  if (estaAutenticado()) return;
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += n;
+  document.getElementById('pin-err').textContent = '';
+  renderPinDots();
+  if (pinBuffer.length === 4) setTimeout(validarPin, 140);
+}
+
+function pinBack() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  renderPinDots();
+}
+
+function validarPin() {
+  const screen = document.getElementById('pin-screen');
+  if (pinBuffer === APP_PIN) {
+    sessionStorage.setItem('dortapods_auth', '1');
+    screen.classList.add('hide');
+    document.getElementById('pin-err').textContent = '';
+    pinBuffer = '';
+  } else {
+    document.getElementById('pin-err').textContent = 'PIN incorreto';
+    const dots = document.getElementById('pin-dots');
+    dots.classList.add('shake');
+    setTimeout(() => {
+      pinBuffer = '';
+      renderPinDots();
+      dots.classList.remove('shake');
+    }, 380);
+  }
+}
+
+// Suporte a teclado físico (desktop)
+document.addEventListener('keydown', (e) => {
+  const screen = document.getElementById('pin-screen');
+  if (!screen || screen.classList.contains('hide') || screen.style.display === 'none') return;
+  if (e.key >= '0' && e.key <= '9') { pinPress(e.key); }
+  else if (e.key === 'Backspace') { e.preventDefault(); pinBack(); }
+});
 
 // ══════════════════════════════════════════════════════════════════
 // INIT
@@ -956,10 +1081,14 @@ async function init() {
 // EXPOR FUNÇÕES GLOBAIS (chamadas pelos onclick do HTML)
 // ══════════════════════════════════════════════════════════════════
 Object.assign(window, {
+  // pin
+  pinPress, pinBack,
   // nav
   goTo, novoPedido, editarPedido,
   // produtos
   filtrarProds, abrirModalProd, editarProd, salvarProduto, excluirProd,
+  // entrada rápida
+  entradaRapida, erAddQtd, confirmarEntradaRapida,
   // entrada
   renderEntrada, addLoteRow, remLoteRow,
   loteAC, selecionarLote, fechaLoteAC,
@@ -972,7 +1101,7 @@ Object.assign(window, {
   // histórico
   filtrarPedidos,
   // whatsapp
-  gerarMsgPedido, verMsgPedido, gerarListaEstoque, copiarWA,
+  gerarMsgPedido, verMsgPedido, gerarListaEstoque, copiarWA, enviarWA,
   // modais
   fecharModal, fecharOverlay, confirmar,
 });

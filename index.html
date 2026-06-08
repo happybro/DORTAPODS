@@ -247,9 +247,63 @@ select.fi option{background:var(--s2)}
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--br2);border-radius:3px}
+
+/* PIN GATE */
+#pin-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px}
+#pin-screen.hide{display:none}
+.pin-logo{font-size:26px;font-weight:800;letter-spacing:-.5px;margin-bottom:2px}
+.pin-logo span{color:var(--ac)}
+.pin-sub{font-size:13px;color:var(--tx3);font-family:var(--mono)}
+.pin-dots{display:flex;gap:16px;margin:8px 0}
+.pin-dot{width:15px;height:15px;border-radius:50%;border:2px solid var(--br2);transition:all .15s}
+.pin-dot.filled{background:var(--ac);border-color:var(--ac);box-shadow:0 0 12px var(--ac-d)}
+.pin-dots.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+.pin-pad{display:grid;grid-template-columns:repeat(3,74px);gap:16px;margin-top:6px}
+.pin-key{width:74px;height:74px;border-radius:50%;border:1px solid var(--br);
+  background:var(--s1);color:var(--tx);font-family:var(--mono);font-size:27px;font-weight:600;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .1s}
+.pin-key:active{background:var(--s3);transform:scale(.93)}
+.pin-key.ghost{background:none;border:none;font-size:22px;color:var(--tx3)}
+.pin-err{font-size:13px;color:var(--re);font-weight:600;height:18px;font-family:var(--mono)}
+
+/* WhatsApp button */
+.btn-wa{background:#25D366;color:#fff}
 </style>
 </head>
 <body>
+
+<!-- PIN GATE -->
+<div id="pin-screen">
+  <div class="pin-logo">Dorta<span>Pods</span></div>
+  <div class="pin-sub">Digite o PIN de acesso</div>
+  <div class="pin-dots" id="pin-dots">
+    <span class="pin-dot"></span><span class="pin-dot"></span>
+    <span class="pin-dot"></span><span class="pin-dot"></span>
+  </div>
+  <div class="pin-err" id="pin-err"></div>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pinPress('1')">1</button>
+    <button class="pin-key" onclick="pinPress('2')">2</button>
+    <button class="pin-key" onclick="pinPress('3')">3</button>
+    <button class="pin-key" onclick="pinPress('4')">4</button>
+    <button class="pin-key" onclick="pinPress('5')">5</button>
+    <button class="pin-key" onclick="pinPress('6')">6</button>
+    <button class="pin-key" onclick="pinPress('7')">7</button>
+    <button class="pin-key" onclick="pinPress('8')">8</button>
+    <button class="pin-key" onclick="pinPress('9')">9</button>
+    <span></span>
+    <button class="pin-key" onclick="pinPress('0')">0</button>
+    <button class="pin-key ghost" onclick="pinBack()">⌫</button>
+  </div>
+</div>
+<script>
+  // Esconde o PIN imediatamente se já autenticado nesta sessão (evita flash)
+  if (sessionStorage.getItem('dortapods_auth') === '1') {
+    document.getElementById('pin-screen').style.display = 'none';
+  }
+</script>
 
 <!-- LOADING OVERLAY -->
 <div id="loading-overlay" style="display:flex">
@@ -285,9 +339,12 @@ select.fi option{background:var(--s2)}
 
 <!-- ══ PRODUTOS ══ -->
 <div class="sc" id="sc-produtos">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:8px">
     <div><div class="stitle">Produtos</div><div class="ssub" style="margin-bottom:0" id="prod-count">0 produtos</div></div>
-    <button class="btn btn-ac btn-sm" onclick="abrirModalProd()">+ Novo</button>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button class="btn btn-wa btn-sm" onclick="gerarListaEstoque()">💬 Lista WA</button>
+      <button class="btn btn-ac btn-sm" onclick="abrirModalProd()">+ Novo</button>
+    </div>
   </div>
   <div class="tabs">
     <button class="tab on" onclick="filtrarProds(this,'todos')">Todos</button>
@@ -406,7 +463,7 @@ select.fi option{background:var(--s2)}
 <div class="sc" id="sc-historico">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
     <div><div class="stitle">Vendas</div><div class="ssub" style="margin-bottom:0" id="hist-count">0 pedidos</div></div>
-    <button class="btn btn-ghost btn-sm" onclick="gerarListaEstoque()">📋 Lista WA</button>
+    <button class="btn btn-wa btn-sm" onclick="gerarListaEstoque()">💬 Lista WA</button>
   </div>
   <div class="tabs">
     <button class="tab on" onclick="filtrarPedidos(this,'todos')">Todos</button>
@@ -458,8 +515,34 @@ select.fi option{background:var(--s2)}
     <div class="sheet-sub" id="wa-sub"></div>
     <div class="wa-text" id="wa-text"></div>
     <div class="btn-row">
+      <button class="btn btn-wa" onclick="enviarWA()">💬 Enviar no WhatsApp</button>
       <button class="btn btn-ac" onclick="copiarWA()">📋 Copiar</button>
-      <button class="btn btn-ghost" onclick="fecharModal('modal-wa')">Fechar</button>
+    </div>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="fecharModal('modal-wa')">Fechar</button>
+  </div>
+</div>
+
+<!-- MODAL ENTRADA RÁPIDA -->
+<div class="overlay" id="modal-entrada-rapida" onclick="fecharOverlay(event,'modal-entrada-rapida')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">📥 Adicionar ao estoque</div>
+    <div class="sheet-sub" id="er-prod-nome"></div>
+    <input type="hidden" id="er-prod-id">
+    <div class="field">
+      <label>Quantidade a adicionar</label>
+      <input class="fi" id="er-qtd" type="number" min="1" inputmode="numeric" placeholder="0"
+        style="text-align:center;font-family:var(--mono);font-size:22px;font-weight:700">
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn btn-ghost btn-xs" style="flex:1" onclick="erAddQtd(5)">+5</button>
+      <button class="btn btn-ghost btn-xs" style="flex:1" onclick="erAddQtd(10)">+10</button>
+      <button class="btn btn-ghost btn-xs" style="flex:1" onclick="erAddQtd(20)">+20</button>
+      <button class="btn btn-ghost btn-xs" style="flex:1" onclick="erAddQtd(50)">+50</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ac" onclick="confirmarEntradaRapida()">✓ Adicionar</button>
+      <button class="btn btn-ghost" onclick="fecharModal('modal-entrada-rapida')">Cancelar</button>
     </div>
   </div>
 </div>
