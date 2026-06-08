@@ -152,10 +152,9 @@ export async function salvarPedido(pedAtual, novoStatus) {
     if (pedOriginal) {
       await updateDoc(pedDocRef, pedData);
     } else {
-      await addDoc(collection(db, 'pedidos'), {
-        ...pedData,
-        id: pedAtual.id
-      });
+      // ✓ Cria novo e sincroniza o ID local com o do Firestore
+      const docRef = await addDoc(collection(db, 'pedidos'), pedData);
+      pedAtual.id = docRef.id;  // Sincroniza!
     }
 
     // 6. Atualizar cache
