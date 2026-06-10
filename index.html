@@ -270,6 +270,12 @@ select.fi option{background:var(--s2)}
 
 /* WhatsApp button */
 .btn-wa{background:#25D366;color:#fff}
+
+/* Badges de pagamento */
+.pay-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:12px;
+  font-size:10px;font-weight:700;font-family:var(--mono);letter-spacing:.3px}
+.pay-pago{background:var(--ac-d);color:var(--ac)}
+.pay-aberto{background:var(--ye-d);color:var(--ye)}
 </style>
 </head>
 <body>
@@ -332,7 +338,7 @@ select.fi option{background:var(--s2)}
     <div class="kpi green kpi-full"><span class="kpi-icon">📈</span><div class="kpi-val green" id="kpi-lucro">R$0</div><div class="kpi-lbl">Lucro bruto</div></div>
   </div>
   <div class="card">
-    <div class="card-title">Últimas movimentações</div>
+    <div class="card-title">Últimos pedidos finalizados</div>
     <div id="dash-hist"></div>
   </div>
 </div>
@@ -398,7 +404,7 @@ select.fi option{background:var(--s2)}
         <div id="lista-preview-items"></div>
         <div class="btn-row" style="margin-top:4px">
           <button class="btn btn-ghost" onclick="document.getElementById('lista-preview').style.display='none'">Editar lista</button>
-          <button class="btn btn-ac" onclick="confirmarEntradaLista()">✓ Confirmar tudo</button>
+          <button class="btn btn-ac" id="btn-confirmar-lista" onclick="confirmarEntradaLista()">✓ Confirmar tudo</button>
         </div>
       </div>
     </div>

@@ -25,6 +25,29 @@ let _confirmarEntrada    = false;
 let _confirmarListaEntrada = false;
 
 // ══════════════════════════════════════════════════════════════════
+// HELPERS DE DISPLAY
+// ══════════════════════════════════════════════════════════════════
+
+// Retorna nome de exibição limpo, removendo "Importado" de registros antigos
+function nomeExibicao(nome, sabor) {
+  const n = (nome && nome.trim() !== 'Importado') ? nome.trim() : '';
+  const s = sabor ? sabor.trim() : '';
+  return [n, s].filter(Boolean).join(' ') || 'Sem nome';
+}
+
+// Formata número de pedido como #0001
+function fmtNumPed(n) {
+  return n ? '#' + String(n).padStart(4, '0') : '#----';
+}
+
+// Retorna badge HTML para situação de pagamento
+function badgePagamento(status) {
+  return status === 'pago'
+    ? '<span class="pay-badge pay-pago">✓ Pago</span>'
+    : '<span class="pay-badge pay-aberto">Em aberto</span>';
+}
+
+// ══════════════════════════════════════════════════════════════════
 // LOADING OVERLAY
 // ══════════════════════════════════════════════════════════════════
 function setLoading(show, msg = 'Carregando...') {
@@ -77,25 +100,31 @@ function renderDash() {
   const alertEl = document.getElementById('low-alert-wrap');
   alertEl.innerHTML = crit.length ? `<div class="low-alert">
     <div class="low-alert-title">⚠️ Estoque crítico (${crit.length})</div>
-    ${crit.slice(0, 5).map(p => `<div class="low-item"><span>${p.nome} ${p.sabor}</span>
+    ${crit.slice(0, 5).map(p => `<div class="low-item"><span>${nomeExibicao(p.nome, p.sabor)}</span>
       <span class="low-qty">${p.estoque} un.</span></div>`).join('')}
   </div>` : '';
 
+  // ── Últimos pedidos finalizados (substitui movimentações) ──────
   const histEl = document.getElementById('dash-hist');
-  const recent = state.movs.slice(0, 8);
-  if (!recent.length) {
-    histEl.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Sem movimentações</div></div>';
+  const ultFinalizados = finalizados
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, 8);
+
+  if (!ultFinalizados.length) {
+    histEl.innerHTML = '<div class="empty"><div class="empty-icon">🛒</div><div class="empty-text">Nenhum pedido finalizado ainda</div></div>';
     return;
   }
-  const icons = { entrada: '📥', saida: '📤', pedido: '🛒' };
-  histEl.innerHTML = recent.map(m => `
+  histEl.innerHTML = ultFinalizados.map(p => `
     <div class="hist-item">
-      <div class="hist-icon ${m.tipo}">${icons[m.tipo] || '📌'}</div>
+      <div class="hist-icon pedido">🛒</div>
       <div class="hist-body">
-        <div class="hist-title">${m.desc}</div>
-        <div class="hist-sub">${fmtDt(m.ts)}</div>
+        <div class="hist-title">${fmtNumPed(p.numeroPedido)} · ${p.cliente}</div>
+        <div class="hist-sub">${fmtDt(p.ts)}</div>
       </div>
-      <div class="hist-val ${m.tipo === 'entrada' ? 'hv-gr' : m.tipo === 'pedido' ? 'hv-bl' : 'hv-re'}">${m.val || ''}</div>
+      <div style="text-align:right;flex-shrink:0">
+        <div class="hist-val hv-gr">${R(p.total)}</div>
+        <div style="margin-top:3px">${badgePagamento(p.pagamentoStatus)}</div>
+      </div>
     </div>`).join('');
 }
 
@@ -113,7 +142,7 @@ function renderProds() {
   let lista = Object.values(state.prods);
   if (prodFiltro === 'baixo') lista = lista.filter(p => p.estoque > 0 && p.estoque < 5);
   if (prodFiltro === 'zero')  lista = lista.filter(p => p.estoque <= 0);
-  lista.sort((a, b) => a.nome.localeCompare(b.nome) || a.sabor.localeCompare(b.sabor));
+  lista.sort((a, b) => nomeExibicao(a.nome, a.sabor).localeCompare(nomeExibicao(b.nome, b.sabor)));
 
   document.getElementById('prod-count').textContent = Object.keys(state.prods).length + ' produto(s)';
   const el = document.getElementById('prod-list');
@@ -124,10 +153,14 @@ function renderProds() {
   el.innerHTML = lista.map(p => {
     const qcls   = p.estoque <= 0 ? 'zero' : p.estoque < 5 ? 'low' : 'ok';
     const margem = p.compra > 0 ? (((p.venda - p.compra) / p.compra) * 100).toFixed(0) : 0;
+    // Compatibilidade com produtos antigos gravados com nome="Importado"
+    const isOldImportado = p.nome === 'Importado';
+    const displayNome  = isOldImportado ? p.sabor : p.nome;
+    const displaySabor = isOldImportado ? '' : p.sabor;
     return `<div class="prod-card ${p.estoque < 5 ? 'low' : ''}">
       <div class="prod-card-top">
-        <div><div class="prod-name">${p.nome}</div>
-          <div class="prod-flavor">${p.sabor}</div></div>
+        <div><div class="prod-name">${displayNome}</div>
+          <div class="prod-flavor">${displaySabor}</div></div>
         <div><div class="prod-qty ${qcls}">${p.estoque}</div>
           <div class="prod-qty-lbl">unidades</div></div>
       </div>
@@ -150,8 +183,10 @@ function abrirModalProd(id) {
   document.getElementById('mprod-title').textContent = id ? 'Editar Produto' : 'Novo Produto';
   if (id && state.prods[id]) {
     const p = state.prods[id];
-    document.getElementById('mprod-nome').value   = p.nome;
-    document.getElementById('mprod-sabor').value  = p.sabor;
+    // Compatibilidade: se nome="Importado", editar mostra sabor no campo nome
+    const isOldImportado = p.nome === 'Importado';
+    document.getElementById('mprod-nome').value   = isOldImportado ? p.sabor : p.nome;
+    document.getElementById('mprod-sabor').value  = isOldImportado ? '' : p.sabor;
     document.getElementById('mprod-compra').value = p.compra;
     document.getElementById('mprod-venda').value  = p.venda;
   } else {
@@ -164,7 +199,6 @@ function abrirModalProd(id) {
 function editarProd(id) { abrirModalProd(id); }
 
 async function salvarProduto() {
-  // ✓ PROTEÇÃO: Anti-duplicação de clique
   if (_salvandoProduto) { toast('Salvando... aguarde', 're'); return; }
   _salvandoProduto = true;
 
@@ -175,7 +209,7 @@ async function salvarProduto() {
     const compra = parseFloat(document.getElementById('mprod-compra').value) || 0;
     const venda  = parseFloat(document.getElementById('mprod-venda').value)  || 0;
 
-    if (!nome || !sabor) { toast('Preencha nome e sabor', 're'); return; }
+    if (!nome) { toast('Preencha o nome do produto', 're'); return; }
 
     const existe = !!id && !!state.prods[id];
     await ProdAPI.salvarProduto({ id, nome, sabor, compra, venda });
@@ -184,14 +218,14 @@ async function salvarProduto() {
     renderProds();
   } catch (e) { erroToast(e); }
   finally {
-    _salvandoProduto = false; // ✓ Sempre libera o mutex
+    _salvandoProduto = false;
   }
 }
 
 async function excluirProd(id) {
   const p = state.prods[id];
   if (!p) return;
-  confirmar(`Excluir "${p.nome} ${p.sabor}"?`, 'Esta ação não pode ser desfeita.', async () => {
+  confirmar(`Excluir "${nomeExibicao(p.nome, p.sabor)}"?`, 'Esta ação não pode ser desfeita.', async () => {
     try {
       await ProdAPI.excluirProduto(id);
       renderProds();
@@ -210,7 +244,7 @@ function entradaRapida(id) {
   if (!p) { toast('Produto não encontrado', 're'); return; }
   document.getElementById('er-prod-id').value = id;
   document.getElementById('er-prod-nome').textContent =
-    `${p.nome} ${p.sabor} · estoque atual: ${p.estoque} un.`;
+    `${nomeExibicao(p.nome, p.sabor)} · estoque atual: ${p.estoque} un.`;
   document.getElementById('er-qtd').value = '';
   document.getElementById('modal-entrada-rapida').classList.add('on');
   setTimeout(() => document.getElementById('er-qtd').focus(), 300);
@@ -233,15 +267,16 @@ async function confirmarEntradaRapida() {
 
   _entradaRapida = true;
   try {
-    await EntradasAPI.registrarEntrada({ prodId: id, nome: p.nome + ' ' + p.sabor, qtd, custo: p.compra });
+    const nomeProd = nomeExibicao(p.nome, p.sabor);
+    await EntradasAPI.registrarEntrada({ prodId: id, nome: nomeProd, qtd, custo: p.compra });
     await MovsAPI.registrarMov({
       tipo: 'entrada',
-      desc: `+${qtd}x ${p.nome} ${p.sabor}`,
+      desc: `+${qtd}x ${nomeProd}`,
       val:  `+${qtd} un.`
     }).catch(() => {});
 
     fecharModal('modal-entrada-rapida');
-    toast(`✓ +${qtd} un. de ${p.nome} ${p.sabor}`, 'ac');
+    toast(`✓ +${qtd} un. de ${nomeProd}`, 'ac');
     renderProds();
     renderDash();
   } catch (e) {
@@ -289,18 +324,18 @@ function loteAC(id) {
   const drop = document.getElementById('lac-' + id);
   if (!q) { drop.style.display = 'none'; return; }
   const matches = Object.values(state.prods)
-    .filter(p => (p.nome + ' ' + p.sabor).toLowerCase().includes(q)).slice(0, 6);
+    .filter(p => nomeExibicao(p.nome, p.sabor).toLowerCase().includes(q)).slice(0, 6);
   if (!matches.length) { drop.style.display = 'none'; return; }
   drop.style.display = 'block';
   drop.innerHTML = matches.map(p => `<div class="ac-item" onpointerdown="selecionarLote(${id},'${p.id}')">
-    <div><div class="ac-item-name">${p.nome} ${p.sabor}</div>
+    <div><div class="ac-item-name">${nomeExibicao(p.nome, p.sabor)}</div>
     <div class="ac-item-sub">estoque: ${p.estoque} un.</div></div></div>`).join('');
 }
 
 function selecionarLote(rowId, prodId) {
   const p = state.prods[prodId];
   if (!p) return;
-  document.getElementById('lnome-' + rowId).value           = p.nome + ' ' + p.sabor;
+  document.getElementById('lnome-' + rowId).value           = nomeExibicao(p.nome, p.sabor);
   document.getElementById('lnome-' + rowId).dataset.prodId  = prodId;
   document.getElementById('lac-'  + rowId).style.display    = 'none';
   document.getElementById('lqtd-' + rowId).focus();
@@ -309,7 +344,6 @@ function selecionarLote(rowId, prodId) {
 function fechaLoteAC(id) { document.getElementById('lac-' + id)?.style && (document.getElementById('lac-' + id).style.display = 'none'); }
 
 async function confirmarEntrada() {
-  // ✓ PROTEÇÃO: Anti-duplicação de clique
   if (_confirmarEntrada) { toast('Processando... aguarde', 're'); return; }
   _confirmarEntrada = true;
 
@@ -325,7 +359,7 @@ async function confirmarEntrada() {
       const prodId = nomeEl?.dataset.prodId;
       if (!prodId || !state.prods[prodId] || qtd <= 0) return;
       const p = state.prods[prodId];
-      ops.push({ prodId, nome: p.nome + ' ' + p.sabor, qtd, custo: p.compra });
+      ops.push({ prodId, nome: nomeExibicao(p.nome, p.sabor), qtd, custo: p.compra });
     });
 
     if (!ops.length) { toast('Nenhum produto válido', 're'); return; }
@@ -341,7 +375,7 @@ async function confirmarEntrada() {
     renderHistEntradas();
   } catch (e) { erroToast(e); }
   finally {
-    _confirmarEntrada = false; // ✓ Sempre libera o mutex
+    _confirmarEntrada = false;
   }
 }
 
@@ -351,14 +385,12 @@ function switchEntrada(btn, modo) {
   document.getElementById('entrada-manual').style.display = modo === 'manual' ? 'block' : 'none';
   document.getElementById('entrada-lista').style.display  = modo === 'lista'  ? 'block' : 'none';
 
-  // ✅ Auto-focus quando mudar para modo lista
   if (modo === 'lista') {
     setTimeout(() => document.getElementById('lista-input')?.focus(), 100);
   }
 }
 
 // ── Parser de lista colada ─────────────────────────────────────────
-// ✅ Listener para processar com Ctrl+Enter
 document.addEventListener('DOMContentLoaded', () => {
   const listaInput = document.getElementById('lista-input');
   if (listaInput) {
@@ -369,7 +401,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-  // Enter confirma entrada rápida
   const erQtd = document.getElementById('er-qtd');
   if (erQtd) {
     erQtd.addEventListener('keydown', (e) => {
@@ -390,24 +421,15 @@ function processarLista() {
     linha = linha.trim();
     if (!linha) return;
 
-    // ✅ Suportar múltiplos formatos:
-    // "100 Produto Nome"
-    // "100x Produto Nome"
-    // "100 - Produto Nome"
-    // "Produto Nome: 100"
-    // "Produto Nome (100)"
-
     let qtd = 0;
     let nome = '';
 
-    // Formato: "100 Produto" ou "100x Produto"
     const m1 = linha.match(/^(\d+)x?\s+(.+)$/i);
     if (m1) {
       qtd = parseInt(m1[1]);
       nome = m1[2].trim();
     }
 
-    // Formato: "Produto: 100" ou "Produto (100)"
     const m2 = linha.match(/^(.+?)[:\s]\(?\d+\)?\s*$/) || linha.match(/^(.+?)[:\s]+(\d+)\s*$/);
     if (!qtd && m2) {
       const match = linha.match(/(\d+)$/);
@@ -423,7 +445,6 @@ function processarLista() {
       return;
     }
 
-    // Validação
     if (!nome || qtd <= 0) {
       linhasComErro.push(lineNum + 1);
       return;
@@ -444,18 +465,17 @@ function processarLista() {
     return;
   }
 
-  // Renderizar preview
   document.getElementById('lista-preview-title').textContent =
     `${listaParseada.length} produto(s) ${linhasComErro.length > 0 ? `(${linhasComErro.length} ignoradas)` : ''}`;
 
-  // ✅ PREVIEW MINIMALISTA - lista rápida e limpa
   document.getElementById('lista-preview-items').innerHTML = listaParseada.map((item, idx) => {
-    const nomeCompleto = (item.marca ? item.marca + ' ' : '') + item.nome;
+    // nomeCompleto: se tem marca, "Marca Sabor"; se não tem, apenas o nome do item
+    const nomeCompleto = item.marca ? `${item.marca} ${item.nome}` : item.nome;
     const encontrado = Object.values(state.prods).find(p => {
-      const fullName = (p.nome + ' ' + p.sabor).toLowerCase();
+      const fullName = nomeExibicao(p.nome, p.sabor).toLowerCase();
       const itemName = nomeCompleto.toLowerCase();
       return fullName === itemName || p.sabor.toLowerCase() === item.nome.toLowerCase() ||
-             fullName.includes(itemName) || itemName.includes(p.sabor.toLowerCase());
+             fullName.includes(itemName) || itemName.includes(fullName);
     });
     const tag = encontrado ? '✓' : 'novo';
     return `<div style="font-size:13px;padding:6px 0;display:flex;justify-content:space-between">
@@ -467,7 +487,6 @@ function processarLista() {
   document.getElementById('lista-preview').style.display = 'block';
   toast(`✓ Pronto! ${listaParseada.length} item(ns)`, 'ac');
 
-  // ✅ Foco automático no botão Confirmar (pra clicar com um Enter)
   setTimeout(() => {
     const btn = document.getElementById('btn-confirmar-lista');
     if (btn) btn.focus();
@@ -475,7 +494,6 @@ function processarLista() {
 }
 
 async function confirmarEntradaLista() {
-  // ✓ PROTEÇÃO: Anti-duplicação de clique
   if (_confirmarListaEntrada) { toast('Processando...', 'ye'); return; }
   _confirmarListaEntrada = true;
 
@@ -493,37 +511,39 @@ async function confirmarEntradaLista() {
         if (!qtd || qtd <= 0) continue;
         qtd = Math.min(qtd, 999999);
 
-        const nomeCompleto = (item.marca ? item.marca + ' ' : '') + item.nome;
+        // nomeCompleto para busca: com marca ou sem
+        const nomeCompleto = item.marca ? `${item.marca} ${item.nome}` : item.nome;
 
-        // ✅ Busca inteligente
+        // Busca inteligente — usa nomeExibicao para ignorar "Importado" em registros antigos
         let prod = Object.values(state.prods).find(p => {
-          const fullName = (p.nome + ' ' + p.sabor).toLowerCase();
+          const fullName = nomeExibicao(p.nome, p.sabor).toLowerCase();
           const itemName = nomeCompleto.toLowerCase();
           return fullName === itemName || p.sabor.toLowerCase() === item.nome.toLowerCase() ||
-                 fullName.includes(itemName) || itemName.includes(p.sabor.toLowerCase());
+                 fullName.includes(itemName) || itemName.includes(fullName);
         });
 
-        // ✅ Criar produto se não existir
+        // ✅ CORREÇÃO: nunca usar 'Importado' como nome
+        // Com marca: nome=marca, sabor=item.nome → exibe "Marca Sabor"
+        // Sem marca:  nome=item.nome, sabor=''   → exibe apenas o nome do produto
         if (!prod) {
           try {
             prod = await ProdAPI.salvarProduto({
-              nome: item.marca || 'Importado',
-              sabor: item.nome,
+              nome:   item.marca || item.nome,
+              sabor:  item.marca ? item.nome : '',
               compra: 0,
-              venda: 0
+              venda:  0
             });
             criados++;
           } catch (err) { continue; }
         }
 
-        // ✅ Registrar entrada
         try {
-          await EntradasAPI.registrarEntrada({ prodId: prod.id, nome: prod.nome + ' ' + prod.sabor, qtd, custo: prod.compra });
-          await MovsAPI.registrarMov({ tipo: 'entrada', desc: `+${qtd}x ${prod.nome} ${prod.sabor}`, val: `+${qtd} un.` }).catch(() => {});
+          const nomeProd = nomeExibicao(prod.nome, prod.sabor);
+          await EntradasAPI.registrarEntrada({ prodId: prod.id, nome: nomeProd, qtd, custo: prod.compra });
+          await MovsAPI.registrarMov({ tipo: 'entrada', desc: `+${qtd}x ${nomeProd}`, val: `+${qtd} un.` }).catch(() => {});
           adicionados++;
         } catch (err) { continue; }
 
-        // ✅ Feedback visual rápido (a cada 3 itens)
         if (adicionados % 3 === 0) {
           document.getElementById('lista-preview-title').textContent = `✓ ${adicionados}/${listaParseada.length}...`;
         }
@@ -535,7 +555,6 @@ async function confirmarEntradaLista() {
       return;
     }
 
-    // ✅ Limpeza e resultado
     document.getElementById('lista-input').value = '';
     document.getElementById('lista-preview').style.display = 'none';
     listaParseada = [];
@@ -544,7 +563,6 @@ async function confirmarEntradaLista() {
     toast(msg, 'ac');
     renderHistEntradas();
 
-    // ✅ Habilitar novo cadastro imediatamente
     setTimeout(() => {
       document.getElementById('lista-input').focus();
     }, 200);
@@ -576,7 +594,18 @@ function renderHistEntradas() {
 // PEDIDO
 // ══════════════════════════════════════════════════════════════════
 function novoPedido() {
-  pedAtual = { id: uid(), cliente: '', obs: '', status: 'pendente', itens: [], total: 0, lucro: 0, ts: Date.now() };
+  pedAtual = {
+    id: uid(),
+    cliente: '',
+    obs: '',
+    status: 'pendente',
+    pagamentoStatus: 'em_aberto',
+    numeroPedido: null,
+    itens: [],
+    total: 0,
+    lucro: 0,
+    ts: Date.now()
+  };
   abrirTelaPedido();
   goTo('pedido', document.getElementById('nb-pedido'));
 }
@@ -593,14 +622,19 @@ function editarPedido(pedId) {
 
 function abrirTelaPedido() {
   document.getElementById('ped-screen-title').textContent = pedAtual._editando ? 'Editar Pedido' : 'Novo Pedido';
-  document.getElementById('ped-screen-sub').textContent   = pedAtual._editando ? `ID: ${pedAtual.id}` : 'Rápido e fácil';
+  document.getElementById('ped-screen-sub').textContent   = pedAtual._editando
+    ? `${fmtNumPed(pedAtual.numeroPedido)} · ${pedAtual.cliente || ''}`
+    : 'Rápido e fácil';
   document.getElementById('ped-cliente').value = pedAtual.cliente || '';
   document.getElementById('ped-obs').value     = pedAtual.obs    || '';
   document.getElementById('ped-filtro').value  = '';
 
   const sw = document.getElementById('ped-status-wrap');
   sw.innerHTML = pedAtual._editando
-    ? `<span class="status-badge status-${pedAtual.status}">${pedAtual.status === 'pendente' ? '⏳ PENDENTE' : '✓ FINALIZADO'}</span>`
+    ? `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <span class="status-badge status-${pedAtual.status}">${pedAtual.status === 'pendente' ? '⏳ PENDENTE' : '✓ FINALIZADO'}</span>
+        ${badgePagamento(pedAtual.pagamentoStatus || 'em_aberto')}
+       </div>`
     : '';
 
   try {
@@ -611,15 +645,15 @@ function abrirTelaPedido() {
   atualizarPedItens();
 }
 
-// NOVA INTERFACE: LISTA DE PRODUTOS PARA PEDIDO
+// LISTA DE PRODUTOS PARA PEDIDO
 function renderProdutosParaPedido() {
   const filtro = document.getElementById('ped-filtro').value.trim().toLowerCase();
   let produtos = Object.values(state.prods)
     .filter(p => p.estoque > 0)
-    .sort((a, b) => a.nome.localeCompare(b.nome) || a.sabor.localeCompare(b.sabor));
+    .sort((a, b) => nomeExibicao(a.nome, a.sabor).localeCompare(nomeExibicao(b.nome, b.sabor)));
 
   if (filtro) {
-    produtos = produtos.filter(p => (p.nome + ' ' + p.sabor).toLowerCase().includes(filtro));
+    produtos = produtos.filter(p => nomeExibicao(p.nome, p.sabor).toLowerCase().includes(filtro));
   }
 
   const listEl = document.getElementById('ped-prods-list');
@@ -634,7 +668,7 @@ function renderProdutosParaPedido() {
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--br);margin-bottom:4px">
         <div style="flex:1">
-          <div style="font-size:14px;font-weight:700">${p.nome} ${p.sabor}</div>
+          <div style="font-size:14px;font-weight:700">${nomeExibicao(p.nome, p.sabor)}</div>
           <div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-top:3px">
             ${p.estoque} un. disponível · ${R(p.venda)}
           </div>
@@ -667,7 +701,7 @@ function adicionarProdutoRapido(prodId) {
 
   atualizarPedItens();
   renderProdutosParaPedido();
-  toast(`✓ ${p.nome} ${p.sabor} adicionado`, 'ac');
+  toast(`✓ ${nomeExibicao(p.nome, p.sabor)} adicionado`, 'ac');
 }
 
 function pedBusca() {
@@ -675,18 +709,18 @@ function pedBusca() {
   const drop = document.getElementById('ped-ac');
   if (!q) { drop.style.display = 'none'; pedProdSelecionado = null; return; }
   const matches = Object.values(state.prods)
-    .filter(p => (p.nome + ' ' + p.sabor).toLowerCase().includes(q) && p.estoque > 0).slice(0, 6);
+    .filter(p => nomeExibicao(p.nome, p.sabor).toLowerCase().includes(q) && p.estoque > 0).slice(0, 6);
   if (!matches.length) { drop.style.display = 'none'; return; }
   drop.style.display = 'block';
   drop.innerHTML = matches.map(p => `<div class="ac-item" onpointerdown="selecionarPedProd('${p.id}')">
-    <div><div class="ac-item-name">${p.nome} ${p.sabor}</div>
+    <div><div class="ac-item-name">${nomeExibicao(p.nome, p.sabor)}</div>
     <div class="ac-item-sub">${p.estoque} un. · ${R(p.venda)}</div></div></div>`).join('');
 }
 
 function selecionarPedProd(prodId) {
   pedProdSelecionado = prodId;
   const p = state.prods[prodId];
-  document.getElementById('ped-busca').value     = p.nome + ' ' + p.sabor;
+  document.getElementById('ped-busca').value     = nomeExibicao(p.nome, p.sabor);
   document.getElementById('ped-ac').style.display = 'none';
   document.getElementById('ped-qtd-input').value  = 1;
   document.getElementById('ped-qtd-input').focus();
@@ -713,7 +747,7 @@ function addItemPedido() {
   document.getElementById('ped-qtd-input').value = 1;
   pedProdSelecionado = null;
   atualizarPedItens();
-  toast(`✓ ${qtd}x ${p.nome} ${p.sabor} adicionado`);
+  toast(`✓ ${qtd}x ${nomeExibicao(p.nome, p.sabor)} adicionado`);
 }
 
 function atualizarPedItens() {
@@ -726,7 +760,7 @@ function atualizarPedItens() {
     <div class="ped-item">
       <div class="ped-item-row">
         <div class="ped-item-info">
-          <div class="ped-item-name">${item.nome} ${item.sabor}</div>
+          <div class="ped-item-name">${nomeExibicao(item.nome, item.sabor)}</div>
           <div class="ped-item-sub">Preço unitário:</div>
         </div>
         <div class="qty-ctrl">
@@ -785,7 +819,16 @@ function remItemPed(idx) { pedAtual.itens.splice(idx, 1); atualizarPedItens(); }
 function renderBotoesPedido() {
   const el = document.getElementById('ped-action-buttons');
   if (!pedAtual) { el.innerHTML = ''; return; }
-  el.innerHTML = pedAtual.status === 'pendente' ? `
+
+  // Botão de toggle de pagamento (apenas quando editando)
+  const pagBtn = pedAtual._editando ? `
+    <button class="btn btn-ghost" onclick="togglePagamentoLocal()" style="margin-bottom:8px">
+      ${(pedAtual.pagamentoStatus || 'em_aberto') === 'pago'
+        ? '↩ Marcar como Em aberto'
+        : '✓ Marcar como Pago'}
+    </button>` : '';
+
+  el.innerHTML = pagBtn + (pedAtual.status === 'pendente' ? `
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="salvarPedido('pendente')">💾 Salvar pendente</button>
       <button class="btn btn-ac"    onclick="salvarPedido('finalizado')">✓ Finalizar</button>
@@ -793,7 +836,19 @@ function renderBotoesPedido() {
     <div class="btn-row">
       <button class="btn btn-re" onclick="cancelarFinalizacao()">↩ Cancelar venda</button>
       <button class="btn btn-ac" onclick="salvarPedido('finalizado')">💾 Salvar edição</button>
-    </div>`;
+    </div>`);
+}
+
+function togglePagamentoLocal() {
+  if (!pedAtual) return;
+  pedAtual.pagamentoStatus = (pedAtual.pagamentoStatus || 'em_aberto') === 'pago' ? 'em_aberto' : 'pago';
+  // Atualiza badge no header
+  const sw = document.getElementById('ped-status-wrap');
+  sw.innerHTML = `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+    <span class="status-badge status-${pedAtual.status}">${pedAtual.status === 'pendente' ? '⏳ PENDENTE' : '✓ FINALIZADO'}</span>
+    ${badgePagamento(pedAtual.pagamentoStatus)}
+  </div>`;
+  renderBotoesPedido();
 }
 
 async function salvarPedido(novoStatus) {
@@ -803,7 +858,7 @@ async function salvarPedido(novoStatus) {
   calcTotalPedido();
 
   try {
-    await PedidosAPI.salvarPedido(pedAtual, novoStatus);
+    const pedSalvo = await PedidosAPI.salvarPedido(pedAtual, novoStatus);
     await MovsAPI.registrarMov({
       tipo: 'pedido',
       desc: novoStatus === 'finalizado'
@@ -813,10 +868,10 @@ async function salvarPedido(novoStatus) {
     });
 
     toast(novoStatus === 'finalizado'
-      ? `✓ Pedido finalizado! Lucro: ${R(pedAtual.lucro)}`
+      ? `✓ Pedido ${fmtNumPed(pedSalvo.numeroPedido)} finalizado! Lucro: ${R(pedAtual.lucro)}`
       : '💾 Pedido salvo como pendente');
 
-    if (novoStatus === 'finalizado') gerarMsgPedido({ ...pedAtual, status: novoStatus });
+    if (novoStatus === 'finalizado') gerarMsgPedido({ ...pedSalvo, status: novoStatus });
 
     pedAtual = null;
     document.getElementById('ped-itens-wrap').style.display  = 'none';
@@ -838,6 +893,34 @@ async function cancelarFinalizacao() {
       document.getElementById('ped-status-wrap').innerHTML =
         `<span class="status-badge status-pendente">⏳ PENDENTE</span>`;
       toast('↩ Pedido voltou para pendente — estoque devolvido', 'ye');
+    } catch (e) { erroToast(e); }
+  });
+}
+
+// ── Toggle de pagamento a partir do histórico ──────────────────────
+async function togglePagamento(pedId) {
+  try {
+    const novoStatus = await PedidosAPI.togglePagamento(pedId);
+    const label = novoStatus === 'pago' ? '✓ Pago' : 'Em aberto';
+    toast(`Pagamento: ${label}`, 'ac');
+    renderHistorico();
+    renderDash();
+  } catch (e) { erroToast(e); }
+}
+
+// ── Excluir pedido ─────────────────────────────────────────────────
+function confirmarExcluirPedido(pedId) {
+  const p = state.pedidos.find(x => x.id === pedId);
+  if (!p) return;
+  const aviso = p.status === 'finalizado'
+    ? 'O estoque será devolvido automaticamente.'
+    : 'Pedido pendente será removido.';
+  confirmar(`Excluir ${fmtNumPed(p.numeroPedido)}?`, aviso, async () => {
+    try {
+      await PedidosAPI.excluirPedido(pedId);
+      toast('Pedido excluído', 'ye');
+      renderHistorico();
+      renderDash();
     } catch (e) { erroToast(e); }
   });
 }
@@ -866,7 +949,7 @@ function renderHistorico() {
     <div class="ped-card ${p.status}">
       <div class="ped-card-top">
         <div>
-          <div class="ped-card-client">👤 ${p.cliente}</div>
+          <div class="ped-card-client">${fmtNumPed(p.numeroPedido)} · ${p.cliente}</div>
           <div class="ped-card-date">${fmtDt(p.ts)}</div>
         </div>
         <div class="ped-card-right">
@@ -874,14 +957,17 @@ function renderHistorico() {
           <div class="ped-card-lucro">${p.status === 'finalizado' ? 'Lucro ' + R(p.lucro) : ''}</div>
         </div>
       </div>
-      <div style="margin-bottom:8px">
+      <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <span class="status-badge status-${p.status}">${p.status === 'pendente' ? '⏳ PENDENTE' : '✓ FINALIZADO'}</span>
+        ${badgePagamento(p.pagamentoStatus)}
       </div>
-      <div class="ped-card-items">${p.itens.map(i => `${i.qtd}x ${i.nome} ${i.sabor} — ${R(i.qtd * i.venda)}`).join('<br>')}</div>
+      <div class="ped-card-items">${p.itens.map(i => `${i.qtd}x ${nomeExibicao(i.nome, i.sabor)} — ${R(i.qtd * i.venda)}`).join('<br>')}</div>
       ${p.obs ? `<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-bottom:8px">${p.obs}</div>` : ''}
-      <div class="btn-row">
+      <div class="btn-row" style="flex-wrap:wrap">
         <button class="btn btn-ghost btn-xs" onclick="editarPedido('${p.id}')">✏️ Editar</button>
         <button class="btn btn-ghost btn-xs" onclick="verMsgPedido('${p.id}')">📋 WhatsApp</button>
+        <button class="btn btn-ghost btn-xs" onclick="togglePagamento('${p.id}')">${(p.pagamentoStatus || 'em_aberto') === 'pago' ? '↩ Em aberto' : '✓ Marcar pago'}</button>
+        <button class="btn btn-re btn-xs" onclick="confirmarExcluirPedido('${p.id}')">🗑</button>
       </div>
     </div>`).join('');
 }
@@ -890,8 +976,26 @@ function renderHistorico() {
 // WHATSAPP
 // ══════════════════════════════════════════════════════════════════
 function gerarMsgPedido(pedido) {
-  const linhas = pedido.itens.map(i => `${i.qtd}x ${i.nome} ${i.sabor} — ${R(i.qtd * i.venda)}`).join('\n');
-  const msg = `Olá ${pedido.cliente}! 👋\n\nSeu pedido foi registrado:\n\n${linhas}\n\n*Total: ${R(pedido.total)}*\n${pedido.obs ? '\n_' + pedido.obs + '_\n' : ''}\nObrigado pela preferência! 🙏`;
+  const numStr = pedido.numeroPedido ? fmtNumPed(pedido.numeroPedido) : '';
+  const pagStr = (pedido.pagamentoStatus || 'em_aberto') === 'pago' ? 'Pago ✅' : 'Em aberto';
+  const linhas = pedido.itens.map(i => `${i.qtd}x ${nomeExibicao(i.nome, i.sabor)} — ${R(i.qtd * i.venda)}`).join('\n');
+  const obsStr = pedido.obs ? `\n\n_${pedido.obs}_` : '';
+  const msg =
+`Olá ${pedido.cliente}! 👋
+
+Seu pedido ${numStr} foi registrado:
+
+${linhas}
+
+*Total: ${R(pedido.total)}*
+
+Pagamento: ${pagStr}
+
+Pix para pagamento:
+Chave Pix: 44998207171
+Nome: Thyago Monteiro Dorta de Souza${obsStr}
+
+Obrigado pela preferência! 🙏`;
   abrirModalWA('Mensagem do pedido', pedido.cliente, msg);
 }
 
@@ -902,16 +1006,22 @@ function verMsgPedido(pedId) {
 
 function gerarListaEstoque() {
   const disp = Object.values(state.prods).filter(p => p.estoque > 0)
-    .sort((a, b) => a.nome.localeCompare(b.nome) || a.sabor.localeCompare(b.sabor));
+    .sort((a, b) => nomeExibicao(a.nome, a.sabor).localeCompare(nomeExibicao(b.nome, b.sabor)));
   if (!disp.length) { toast('Estoque vazio', 're'); return; }
   const totalUn = disp.reduce((s, p) => s + p.estoque, 0);
   const hoje    = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const grupos  = {};
-  disp.forEach(p => { (grupos[p.nome] ||= []).push(p); });
+
+  // Agrupa pela parte "nome" do produto (ignorando Importado)
+  const grupos = {};
+  disp.forEach(p => {
+    const chave = p.nome === 'Importado' ? '—' : p.nome;
+    (grupos[chave] ||= []).push(p);
+  });
+
   let txt = `🔥 *PODS DISPONÍVEIS* 🔥\n_${hoje}_\n\n`;
   Object.keys(grupos).sort().forEach(nome => {
     txt += `*${nome}*\n`;
-    grupos[nome].forEach(p => { txt += `${p.nome} ${p.sabor} — ${p.estoque} un.\n`; });
+    grupos[nome].forEach(p => { txt += `${nomeExibicao(p.nome, p.sabor)} — ${p.estoque} un.\n`; });
     txt += '\n';
   });
   txt += `📦 *Total: ${totalUn} unidades · ${disp.length} sabores*\n📲 _Pedidos pelo WhatsApp_`;
@@ -928,7 +1038,6 @@ function abrirModalWA(title, sub, txt) {
 function enviarWA() {
   const txt = document.getElementById('wa-text').textContent;
   if (!txt) { toast('Nada para enviar', 're'); return; }
-  // wa.me abre o WhatsApp (app no celular ou WhatsApp Web no PC) com o texto pronto
   const url = 'https://wa.me/?text=' + encodeURIComponent(txt);
   window.open(url, '_blank');
   toast('Abrindo WhatsApp...', 'wa');
@@ -1018,7 +1127,6 @@ function validarPin() {
   }
 }
 
-// Suporte a teclado físico (desktop)
 document.addEventListener('keydown', (e) => {
   const screen = document.getElementById('pin-screen');
   if (!screen || screen.classList.contains('hide') || screen.style.display === 'none') return;
@@ -1034,13 +1142,11 @@ async function init() {
   setInterval(updateTime, 30000);
   setLoading(true, 'Iniciando DortaPods...');
 
-  // Inicializar state vazio
   state.prods = {};
   state.pedidos = [];
   state.entradas = [];
   state.movs = [];
 
-  // Carregar dados em background (não bloqueia)
   (async () => {
     try {
       await migrarLocalStorage().catch(() => {});
@@ -1049,7 +1155,6 @@ async function init() {
       await MovsAPI.carregarMovs().catch(() => {});
       await EntradasAPI.carregarEntradas().catch(() => {});
 
-      // Renderizar após carregar
       renderDash();
       console.log('[Init] ✓ Dados carregados');
     } catch (e) {
@@ -1057,7 +1162,6 @@ async function init() {
     }
   })();
 
-  // Mostrar tela IMEDIATAMENTE (não espera dados)
   setTimeout(() => {
     setLoading(false);
     pedAtual = {
@@ -1065,6 +1169,8 @@ async function init() {
       cliente: '',
       obs: '',
       status: 'pendente',
+      pagamentoStatus: 'em_aberto',
+      numeroPedido: null,
       itens: [],
       total: 0,
       lucro: 0,
@@ -1074,7 +1180,7 @@ async function init() {
     renderDash();
     renderEntrada();
     console.log('[Init] ✓ App pronto!');
-  }, 500); // Espera apenas 500ms antes de mostrar
+  }, 500);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1098,8 +1204,11 @@ Object.assign(window, {
   renderProdutosParaPedido, adicionarProdutoRapido,
   pedBusca, selecionarPedProd, fechaAcPed, ajustarPedQtd, addItemPedido,
   editarPreco, pedQtd, remItemPed, salvarPedido, cancelarFinalizacao,
+  togglePagamentoLocal,
   // histórico
   filtrarPedidos,
+  // pagamento / exclusão
+  togglePagamento, confirmarExcluirPedido,
   // whatsapp
   gerarMsgPedido, verMsgPedido, gerarListaEstoque, copiarWA, enviarWA,
   // modais
